@@ -1,0 +1,11 @@
+.govpack-profile-field-select__popover {
+	.components-menu-item__button *:has(mark){
+		white-space-collapse: preserve;
+	}
+
+	.components-popover__content{
+		width:100%;
+		max-width:250px;
+	}
+}
+

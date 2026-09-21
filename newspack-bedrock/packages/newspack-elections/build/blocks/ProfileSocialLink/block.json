@@ -1,0 +1,56 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "npe/profile-social-link",
+  "title": "Profile Social Link",
+  "editorScript": "file:./index.js",
+  "editorStyle": [
+    "wp-block-social-links-editor",
+    "file:./index.css"
+  ],
+  "style": [
+    "wp-block-social-links",
+    "file:./view.css"
+  ],
+  "category": "newspack-elections",
+  "supports": {
+    "reusable": true,
+    "html": false,
+    "interactivity": {
+      "clientNavigation": true
+    },
+    "gp/field-aware": {
+      "type": "service",
+      "allowSwitching": "service"
+    }
+  },
+  "attributes": {
+    "linkTextOverride": {
+      "type": "string"
+    },
+    "linkFormat": {
+      "type": "string",
+      "default": "label"
+    },
+    "iconSize": {
+      "type": "integer"
+    }
+  },
+  "parent": [
+    "npe/profile-social-links"
+  ],
+  "usesContext": [
+    "npe/openInNewTab",
+    "npe/showLabels",
+    "npe/iconColor",
+    "npe/iconColorValue",
+    "npe/iconBackgroundColor",
+    "npe/iconBackgroundColorValue",
+    "npe/field",
+    "postType",
+    "queryId",
+    "postId",
+    "npe/profileId",
+    "npe/postId"
+  ]
+}

@@ -1,0 +1,126 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "npe/profile-name",
+	"title": "Profile Name",
+    "editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./index.css",
+	"category": "newspack-elections",
+	"example" : {
+		"attributes" : {
+			"fieldType" : "block",
+			"fieldKey" : "postname"
+		}
+	},
+	"supports" : {
+		"anchor": true,
+		"align-wide": true,
+		"aria-label": true,
+		"align": [ "wide", "full" ],
+		"html": false,
+		"color": {
+			"gradients": true,
+			"link": true,
+			"__experimentalDefaultControls": {
+				"background": true,
+				"text": true,
+				"link": true
+			}
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"__experimentalFontFamily": true,
+			"__experimentalFontWeight": true,
+			"__experimentalFontStyle": true,
+			"__experimentalTextTransform": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalLetterSpacing": true,
+			"__experimentalDefaultControls": {
+				"fontSize": true
+			}
+		},
+		"interactivity": {
+			"clientNavigation": true
+		},
+		"__experimentalBorder": {
+			"radius": true,
+			"color": true,
+			"width": true,
+			"style": true,
+			"__experimentalDefaultControls": {
+				"radius": true,
+				"color": true,
+				"width": true,
+				"style": true
+			}
+		}
+	},
+	"attributes": {
+		"fieldKey" : {
+			"type": "string",
+			"default": "postname"
+		},
+		"fieldType" : {
+			"type": "string",
+			"default" : "block"
+		},
+		"textAlign": {
+			"type": "string"
+		},
+		"level": {
+			"type": "number",
+			"default": 4
+		},
+		"levelOptions" : {
+			"type": "array"
+		},
+		"isLink": {
+			"type": "boolean",
+			"default": false,
+			"role": "content"
+		},
+		"rel": {
+			"type": "string",
+			"attribute": "rel",
+			"default": "",
+			"role": "content"
+		},
+		"linkTarget": {
+			"type": "string",
+			"default": "_self",
+			"role": "content"
+		},
+		"fontSize": {
+			"type" : "string",
+			"default": "medium"
+		},
+		"fontFamily": {
+			"type" : "string",
+			"default": "system-sans-serif"
+		},
+		"style": {
+			"type" : "object",
+			"default" : {
+				"typography": {
+					"fontWeight": "1000"
+				}
+			}
+		}
+	},
+	"ancestor": [ "npe/profile" ],
+	"usesContext": [
+		"queryId",
+		"postId",
+		"npe/showLabels",
+		"postType", 
+		"npe/postId",
+		"npe/profileId"
+	]
+	
+}

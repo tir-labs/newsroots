@@ -1,0 +1,734 @@
+<?php
+/**
+ * Audience Content Gates Wizard
+ *
+ * @package Newspack
+ */
+
+namespace Newspack;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Audience Campaigns Wizard.
+ */
+class Audience_Content_Gates extends Wizard {
+
+	use Wizards\Traits\Content_Gate_Preferences;
+	use Wizards\Traits\Audience_Management_Dependency;
+
+	/**
+	 * Admin page slug.
+	 *
+	 * @var string
+	 */
+	protected $slug = 'newspack-audience-access-control';
+
+	/**
+	 * Parent slug.
+	 *
+	 * @var string
+	 */
+	protected $parent_slug = 'newspack-audience';
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		parent::__construct();
+		add_action( 'rest_api_init', [ $this, 'register_api_endpoints' ] );
+
+		// Determine active menu items.
+		add_filter( 'parent_file', [ $this, 'parent_file' ] );
+		add_filter( 'submenu_file', [ $this, 'submenu_file' ] );
+	}
+
+	/**
+	 * Parent file filter. Used to determine active menu items.
+	 *
+	 * @param string $parent_file Parent file to be overridden.
+	 * @return string
+	 */
+	public function parent_file( $parent_file ) {
+		global $pagenow, $typenow;
+		if ( in_array( $pagenow, [ 'post.php', 'post-new.php' ] ) && $typenow === Content_Gate::GATE_CPT ) {
+			return $this->parent_slug;
+		}
+		return $parent_file;
+	}
+
+	/**
+	 * Submenu file filter. Used to determine active submenu items.
+	 *
+	 * @param string $submenu_file Submenu file to be overridden.
+	 * @return string
+	 */
+	public function submenu_file( $submenu_file ) {
+		global $pagenow, $typenow;
+		if ( in_array( $pagenow, [ 'post.php', 'post-new.php' ] ) && $typenow === Content_Gate::GATE_CPT ) {
+			return $this->slug;
+		}
+		return $submenu_file;
+	}
+
+	/**
+	 * Get the name for this wizard.
+	 *
+	 * @return string The wizard name.
+	 */
+	public function get_name() {
+		return esc_html__( 'Audience Management / Access Control', 'newspack-plugin' );
+	}
+
+	/**
+	 * Enqueue scripts and styles.
+	 */
+	public function enqueue_scripts_and_styles() {
+		if ( ! $this->is_wizard_page() || ! $this->is_feature_enabled() ) {
+			return;
+		}
+
+		parent::enqueue_scripts_and_styles();
+
+		wp_enqueue_script( 'newspack-wizards' );
+
+		\wp_localize_script(
+			'newspack-wizards',
+			'newspackAudienceContentGates',
+			array_merge(
+				[
+					'api'                           => '/' . NEWSPACK_API_NAMESPACE . '/wizard/' . $this->slug,
+					'available_access_rules'        => Access_Rules::get_access_rules_for_client(),
+					'available_content_rules'       => Content_Rules::get_content_rules(),
+					'edit_gate_layout_url'          => Content_Gate::get_edit_gate_layout_url(),
+					'presave_checks_enabled'        => Content_Gate::get_presave_checks_enabled(),
+					'default_gate_status'           => Content_Gate::get_default_new_gate_status(),
+					'feed_restriction_modes'        => Content_Gate_Advanced_Settings::get_feed_restriction_mode_options(),
+					// While Memberships is active it governs feeds and Access Control
+					// stands down, so the feed controls below still save but change
+					// nothing until cutover. The wizard says so rather than hiding
+					// them: the stored value is what takes effect once Memberships is
+					// deactivated. See Content_Gate_Advanced_Settings::get_feed_restriction_mode().
+					'feeds_governed_by_memberships' => Memberships::is_active(),
+				],
+				$this->get_audience_management_script_data()
+			)
+		);
+
+		\wp_localize_script(
+			'newspack-wizards',
+			'newspackAudience',
+			[
+				'available_products'       => Content_Gate::get_purchasable_product_options(),
+				'institutional_access_url' => home_url( Content_Gate\IP_Access_Rule::ENDPOINT ),
+				'content_gifting'          => [
+					'can_use_gifting' => Content_Gifting::can_use_gifting(),
+					'has_metering'    => Content_Gate::is_metering_enabled(),
+				],
+			]
+		);
+
+		// Enqueue content banner CSS for previews.
+		wp_enqueue_style( 'newspack-content-banner', Newspack::plugin_url() . '/dist/content-banner.css', [], Newspack::asset_version( 'content-banner' ) );
+	}
+
+	/**
+	 * Add Audience top-level and Content Gate subpage to the /wp-admin menu.
+	 */
+	public function add_page() {
+		if ( ! $this->is_feature_enabled() ) {
+			return;
+		}
+
+		add_submenu_page(
+			$this->parent_slug,
+			$this->get_name(),
+			esc_html__( 'Access Control', 'newspack-plugin' ),
+			$this->capability,
+			$this->slug,
+			[ $this, 'render_wizard' ]
+		);
+	}
+
+	/**
+	 * Check feature flag status.
+	 *
+	 * @return bool
+	 */
+	public function is_feature_enabled() {
+		return Content_Gate::is_newspack_feature_enabled();
+	}
+
+	/**
+	 * Register the endpoints needed for the wizard screens.
+	 */
+	public function register_api_endpoints() {
+		if ( ! $this->is_feature_enabled() ) {
+			return;
+		}
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug,
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_config' ],
+				'permission_callback' => [ $this, 'api_permissions_check' ],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug . '/settings',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'update_settings' ],
+				'permission_callback' => [ $this, 'api_permissions_check' ],
+				'args'                => [
+					'advanced_settings' => [
+						'type'                 => 'object',
+						'required'             => true,
+						// Unknown keys are ignored by the update handler anyway;
+						// rejecting them makes that contract explicit.
+						'additionalProperties' => false,
+						'properties'           => [
+							'restrict_feeds'        => [ 'type' => 'boolean' ],
+							'feed_restriction_mode' => [
+								'type' => 'string',
+								'enum' => Content_Gate_Advanced_Settings::get_feed_restriction_modes(),
+							],
+							'newsletter_link_bypass_enabled' => [ 'type' => 'boolean' ],
+						],
+						// Validate the whole object against the schema so the nested
+						// feed_restriction_mode enum is actually enforced (a bad value
+						// returns a 400 instead of being silently coerced to the default).
+						'validate_callback'    => 'rest_validate_request_arg',
+						'sanitize_callback'    => 'rest_sanitize_request_arg',
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug . '/content-gifting',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'update_content_gifting' ],
+				'permission_callback' => [ $this, 'api_permissions_check' ],
+				'args'                => [
+					'button_label'         => [
+						'type' => 'string',
+					],
+					'cta_label'            => [
+						'type' => 'string',
+					],
+					'cta_product_id'       => [
+						'type' => 'integer',
+					],
+					'cta_type'             => [
+						'type' => 'string',
+					],
+					'cta_url'              => [
+						'type' => 'string',
+					],
+					'enabled'              => [
+						'type' => 'boolean',
+					],
+					'expiration_time'      => [
+						'type' => 'integer',
+					],
+					'expiration_time_unit' => [
+						'type' => 'string',
+					],
+					'interval'             => [
+						'type' => 'string',
+					],
+					'limit'                => [
+						'type' => 'integer',
+					],
+					'style'                => [
+						'type' => 'string',
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug . '/site-meter',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'update_site_meter' ],
+				'permission_callback' => [ $this, 'api_permissions_check' ],
+				'args'                => [
+					'anonymous_count'  => [
+						'type'    => 'integer',
+						'minimum' => 0,
+					],
+					'registered_count' => [
+						'type'    => 'integer',
+						'minimum' => 0,
+					],
+					'period'           => [
+						'type' => 'string',
+						'enum' => [ 'week', 'month' ],
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug . '/countdown-banner',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'update_countdown_banner' ],
+				'permission_callback' => [ $this, 'api_permissions_check' ],
+				'args'                => [
+					'button_label'   => [
+						'type' => 'string',
+					],
+					'cta_label'      => [
+						'type' => 'string',
+					],
+					'cta_product_id' => [
+						'type' => 'integer',
+					],
+					'cta_type'       => [
+						'type' => 'string',
+					],
+					'cta_url'        => [
+						'type' => 'string',
+					],
+					'enabled'        => [
+						'type' => 'boolean',
+					],
+					'style'          => [
+						'type' => 'string',
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug,
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'create_gate' ],
+				'args'                => [
+					'gate' => [
+						'type'              => 'object',
+						'sanitize_callback' => [ 'Newspack\Content_Gate_API', 'sanitize_gate' ],
+						'properties'        => Content_Gate_API::$gate_properties,
+					],
+				],
+				'permission_callback' => [ $this, 'api_permissions_check_audience_management' ],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug . '/(?P<id>\d+)',
+			[
+				'methods'             => 'DELETE',
+				'callback'            => [ $this, 'delete_gate' ],
+				'permission_callback' => [ $this, 'api_permissions_check' ],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug . '/priority',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'update_gate_priorities' ],
+				'permission_callback' => [ $this, 'api_permissions_check' ],
+				'args'                => [
+					'gates' => [
+						'type'  => 'array',
+						'items' => [
+							'type'       => 'object',
+							'properties' => [
+								'id'       => [
+									'type'              => 'integer',
+									'sanitize_callback' => 'absint',
+								],
+								'priority' => [
+									'type'              => 'integer',
+									'sanitize_callback' => 'absint',
+								],
+							],
+						],
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug . '/(?P<id>\d+)',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'update_gate' ],
+				'permission_callback' => [ $this, 'api_permissions_check' ],
+				'args'                => [
+					'gate' => [
+						'type'              => 'object',
+						'sanitize_callback' => [ 'Newspack\Content_Gate_API', 'sanitize_gate' ],
+						'properties'        => Content_Gate_API::$gate_properties,
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug . '/(?P<id>\d+)/duplicate',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'api_duplicate_gate' ],
+				'permission_callback' => [ $this, 'api_permissions_check_audience_management' ],
+				'args'                => [
+					'id' => [
+						'type'              => 'integer',
+						'sanitize_callback' => 'absint',
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/wizard/' . $this->slug . '/posts-search',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'posts_search' ],
+				'permission_callback' => [ $this, 'api_permissions_check' ],
+				'args'                => [
+					'search'   => [
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'include'  => [
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'per_page' => [
+						'type'              => 'integer',
+						'default'           => 10,
+						'minimum'           => 1,
+						'maximum'           => 100,
+						'sanitize_callback' => 'absint',
+						'validate_callback' => 'rest_validate_request_arg',
+					],
+				],
+			]
+		);
+
+		$this->register_preferences_route();
+	}
+
+	/**
+	 * Get the gates.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_config() {
+		// REST never fires `admin_init`, so a client reading the config before any
+		// wp-admin pageload would be told gates share an allowance not yet being served.
+		Site_Meter::maybe_adopt_gate_settings();
+		$advanced_settings_response = $this->prepare_advanced_settings_response( Content_Gate_Advanced_Settings::get_settings() );
+		$config = [
+			'gates'  => Content_Gate::get_gates(),
+			'config' => [
+				'site_meter'        => Site_Meter::get_settings(),
+				'countdown_banner'  => Metering_Countdown::get_settings(),
+				'content_gifting'   => Content_Gifting::get_settings(),
+				'advanced_settings' => $advanced_settings_response,
+				'has_newsletters'   => Reader_Activation::is_esp_configured(),
+				'has_institutions'  => Institution::has_institutions(),
+			],
+		];
+		return rest_ensure_response( $config );
+	}
+
+	/**
+	 * Update advanced settings.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function update_settings( $request ) {
+		$settings = $request->get_param( 'advanced_settings' );
+		$updated = Content_Gate_Advanced_Settings::update_settings( $settings );
+		// Shaped exactly like the GET response: the wizard writes this payload
+		// into the same store slot it read the config from and compares the two
+		// with JSON.stringify, so an int here where the GET returned a bool would
+		// leave the Save button enabled after a successful save.
+		return rest_ensure_response( $this->prepare_advanced_settings_response( $updated ) );
+	}
+
+	/**
+	 * Shape the advanced settings for a REST response.
+	 *
+	 * The boolean flags are stored as 0/1 integers; the TS types (and the
+	 * wizard's dirty-state comparison) expect booleans. feed_restriction_mode is
+	 * stored and returned as a string.
+	 *
+	 * @param array $advanced Stored advanced settings.
+	 *
+	 * @return array
+	 */
+	private function prepare_advanced_settings_response( $advanced ) {
+		return [
+			'restrict_feeds'                 => (bool) ( $advanced['restrict_feeds'] ?? false ),
+			'feed_restriction_mode'          => (string) ( $advanced['feed_restriction_mode'] ?? Content_Gate_Advanced_Settings::FEED_MODE_TRUNCATE ),
+			'newsletter_link_bypass_enabled' => (bool) ( $advanced['newsletter_link_bypass_enabled'] ?? false ),
+		];
+	}
+
+	/**
+	 * Update content gifting settings.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function update_content_gifting( $request ) {
+		$args = $request->get_params();
+
+		if ( isset( $args['enabled'] ) ) {
+			Content_Gifting::set_enabled( (bool) $args['enabled'] );
+		}
+		if ( isset( $args['limit'] ) ) {
+			Content_Gifting::set_gifting_limit( (int) $args['limit'] );
+		}
+		if ( isset( $args['expiration_time'] ) ) {
+			Content_Gifting::set_expiration_time( (int) $args['expiration_time'] );
+		}
+		if ( isset( $args['expiration_time_unit'] ) ) {
+			Content_Gifting::set_expiration_time_unit( sanitize_text_field( $args['expiration_time_unit'] ) );
+		}
+		if ( isset( $args['interval'] ) ) {
+			Content_Gifting::set_gifting_reset_interval( sanitize_text_field( $args['interval'] ) );
+		}
+		if ( isset( $args['cta_label'] ) ) {
+			Content_Gifting_CTA::set_cta_label( sanitize_text_field( $args['cta_label'] ) );
+		}
+		if ( isset( $args['button_label'] ) ) {
+			Content_Gifting_CTA::set_button_label( sanitize_text_field( $args['button_label'] ) );
+		}
+		if ( isset( $args['cta_type'] ) ) {
+			Content_Gifting_CTA::set_cta_type( sanitize_text_field( $args['cta_type'] ) );
+		}
+		if ( isset( $args['cta_product_id'] ) ) {
+			Content_Gifting_CTA::set_cta_product_id( (int) $args['cta_product_id'] );
+		}
+		if ( isset( $args['cta_url'] ) ) {
+			Content_Gifting_CTA::set_cta_url( sanitize_text_field( $args['cta_url'] ) );
+		}
+		if ( isset( $args['style'] ) ) {
+			Content_Gifting_CTA::set_style( sanitize_text_field( $args['style'] ) );
+		}
+		return rest_ensure_response( Content_Gifting::get_settings() );
+	}
+
+	/**
+	 * Update countdown banner settings.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function update_countdown_banner( $request ) {
+		$args = $request->get_params();
+		return rest_ensure_response( Metering_Countdown::update_settings( $args ) );
+	}
+
+	/**
+	 * Update the site meter settings.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function update_site_meter( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		// Before the write, so a site that can adopt has adopted by the time the save
+		// lands (adoption defers while Woo Memberships is active). The seed is add-only,
+		// so an adoption run already in flight cannot overwrite what this request writes.
+		Site_Meter::maybe_adopt_gate_settings();
+		// Only what the request actually sent: forwarding an absent count as null would
+		// sanitize to zero and silently close the allowance site-wide.
+		$settings = array_intersect_key( $request->get_params(), Site_Meter::get_default_settings() );
+		return rest_ensure_response( Site_Meter::update_settings( $settings ) );
+	}
+
+	/**
+	 * Create a gate.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function create_gate( $request ) {
+		$gate = Content_Gate::create_gate( Content_Gate::with_default_new_gate_status( $request->get_param( 'gate' ) ) );
+		if ( is_wp_error( $gate ) ) {
+			return $gate;
+		}
+		return rest_ensure_response( Content_Gate::get_gate( $gate ) );
+	}
+
+	/**
+	 * Delete a gate.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function delete_gate( $request ) {
+		$id = Content_Gate_API::get_route_gate_id( $request );
+		$gate = get_post( $id );
+		if ( ! $gate ) {
+			return new \WP_Error( 'invalid_gate_id', __( 'Invalid gate ID.', 'newspack-plugin' ), [ 'status' => 400 ] );
+		}
+		if ( Content_Gate::GATE_CPT !== $gate->post_type ) {
+			return new \WP_Error( 'invalid_gate_type', __( 'Invalid gate type.', 'newspack-plugin' ), [ 'status' => 400 ] );
+		}
+		wp_delete_post( $id, true );
+		return rest_ensure_response( true );
+	}
+
+	/**
+	 * Duplicate a gate.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function api_duplicate_gate( $request ) {
+		$id   = Content_Gate_API::get_route_gate_id( $request );
+		$gate = get_post( $id );
+		if ( ! $gate ) {
+			return new \WP_Error( 'invalid_gate_id', __( 'Invalid gate ID.', 'newspack-plugin' ), [ 'status' => 400 ] );
+		}
+		if ( Content_Gate::GATE_CPT !== $gate->post_type ) {
+			return new \WP_Error( 'invalid_gate_type', __( 'Invalid gate type.', 'newspack-plugin' ), [ 'status' => 400 ] );
+		}
+		// A copy of a newsletter gate belongs to the Premium Newsletters list, where this wizard could not show it.
+		if ( get_post_meta( $id, 'is_newsletter', true ) ) {
+			return new \WP_Error( 'invalid_content_gate', __( 'Invalid content gate.', 'newspack-plugin' ), [ 'status' => 400 ] );
+		}
+
+		$new_gate_id = Content_Gate::duplicate_gate( $id );
+		if ( is_wp_error( $new_gate_id ) ) {
+			return $new_gate_id;
+		}
+		return rest_ensure_response( Content_Gate::get_gate( $new_gate_id ) );
+	}
+
+	/**
+	 * Update a gate.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function update_gate( $request ) {
+		$gate = Content_Gate::update_gate_settings( Content_Gate_API::get_route_gate_id( $request ), $request->get_param( 'gate' ) );
+		if ( is_wp_error( $gate ) ) {
+			return $gate;
+		}
+		return rest_ensure_response( $gate );
+	}
+
+	/**
+	 * Update multiple gates.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function update_gate_priorities( $request ) {
+		$gates = $request->get_param( 'gates' );
+		$updated_gates = [];
+		foreach ( $gates as $gate ) {
+			$updated_gate = Content_Gate::update_gate_setting( $gate['id'], 'gate_priority', $gate['priority'] );
+			if ( is_wp_error( $updated_gate ) ) {
+				return $updated_gate;
+			}
+			$updated_gates[] = $updated_gate;
+		}
+		return rest_ensure_response( $updated_gates );
+	}
+
+	/**
+	 * REST callback: search published posts across all post types supported by content gates.
+	 *
+	 * Returns items in the shape consumed by ContentRuleControlTokenField:
+	 * `[{ id, name, type_label }]`. Supports `search` (by title/content) and `include`
+	 * (comma-separated IDs to hydrate saved tokens regardless of search match).
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 * @return \WP_REST_Response
+	 */
+	public function posts_search( $request ) {
+		$post_types = array_column( Content_Restriction_Control::get_available_post_types(), 'value' );
+
+		$args = [
+			'post_type'      => $post_types,
+			'post_status'    => 'publish',
+			'posts_per_page' => (int) $request->get_param( 'per_page' ),
+			'orderby'        => 'title',
+			'order'          => 'ASC',
+			'no_found_rows'  => true,
+		];
+
+		$include = $request->get_param( 'include' );
+		if ( ! empty( $include ) ) {
+			$ids = array_filter( array_map( 'absint', explode( ',', $include ) ) );
+			if ( empty( $ids ) ) {
+				return rest_ensure_response( [] );
+			}
+			// Broader status filter when hydrating saved tokens so the editor
+			// keeps showing items whose status changed since the gate was saved.
+			$args['post_status']    = [ 'publish', 'draft', 'pending', 'private', 'future' ];
+			$args['post__in']       = $ids;
+			$args['posts_per_page'] = min( count( $ids ), 100 );
+			$args['orderby']        = 'post__in';
+		}
+
+		$search = $request->get_param( 'search' );
+		if ( ! empty( $search ) ) {
+			// Numeric search: treat as a post ID lookup.
+			if ( is_numeric( $search ) ) {
+				$args['p'] = absint( $search );
+			} else {
+				$args['s'] = $search;
+			}
+		}
+
+		$query = new \WP_Query( $args );
+
+		$labels = [];
+		foreach ( $post_types as $pt ) {
+			$obj = get_post_type_object( $pt );
+			$labels[ $pt ] = $obj && isset( $obj->labels->singular_name ) ? $obj->labels->singular_name : $pt;
+		}
+
+		$data = array_map(
+			function( $post ) use ( $labels ) {
+				return [
+					'id'         => (int) $post->ID,
+					'name'       => $post->post_title !== '' ? $post->post_title : sprintf( '#%d', $post->ID ),
+					'type_label' => $labels[ $post->post_type ] ?? $post->post_type,
+				];
+			},
+			$query->posts
+		);
+
+		return rest_ensure_response( $data );
+	}
+}

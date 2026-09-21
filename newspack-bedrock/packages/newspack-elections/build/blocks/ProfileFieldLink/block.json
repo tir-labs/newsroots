@@ -1,0 +1,76 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "npe/profile-field-link",
+  "title": "Profile Field Link",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./view.css",
+  "category": "newspack-elections",
+  "example": {
+    "attributes": {
+      "fieldType": "link",
+      "fieldKey": "campaign_x"
+    }
+  },
+  "supports": {
+    "anchor": true,
+    "aria-label": true,
+    "color": {
+      "background": true,
+      "enableContrastChecker": true,
+      "gradients": true,
+      "link": true,
+      "text": true
+    },
+    "layout": {
+      "allowSwitching": false,
+      "allowJustification": false,
+      "allowOrientation": false
+    },
+    "shadow": true,
+    "spacing": {
+      "margin": true,
+      "padding": true,
+      "blockGap": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "textAlign": true,
+      "__experimentalFontFamily": true,
+      "__experimentalFontStyle": true,
+      "__experimentalFontWeight": true,
+      "__experimentalLetterSpacing": true,
+      "__experimentalTextDecoration": true,
+      "__experimentalTextTransform": true
+    },
+    "gp/field-aware": {
+      "type": "link"
+    }
+  },
+  "attributes": {
+    "linkTextOverride": {
+      "type": "string"
+    },
+    "linkFormat": {
+      "type": "string",
+      "default": "label"
+    },
+    "iconSize": {
+      "type": "string"
+    }
+  },
+  "ancestor": [
+    "npe/profile"
+  ],
+  "usesContext": [
+    "npe/fieldKey",
+    "npe/field",
+    "npe/showLabels",
+    "postType",
+    "queryId",
+    "postId",
+    "npe/postId"
+  ]
+}

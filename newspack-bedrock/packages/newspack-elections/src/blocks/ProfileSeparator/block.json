@@ -1,0 +1,49 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "npe/profile-separator",
+	"title": "Profile Separator",
+    "editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./view.css",
+	"category": "newspack-elections",
+	"supports" : {
+		"anchor": true,
+		"align": true,
+		"align-wide": true,
+		"aria-label": true,
+		"color" : {
+			"background" : false,
+			"text": false
+		},
+		"shadow": true, 
+		"spacing": {
+			"margin": true
+		}
+	},
+	"attributes": {
+		"customHeight": {
+			"type": "string"
+		},
+		"width": {
+			"type": "string"
+		},
+		"separatorColor" : {
+			"type" : "string"
+		},
+		"customSeparatorColor" : {
+			"type" : "string"
+		}
+	},
+	"ancestor": [ "npe/profile-row-group" ],
+	"usesContext": [
+		"npe/postId",
+		"postType", 
+		"npe/profileField", 
+		"npe/separatorHeight",
+		"npe/separatorMargin",
+		"npe/separatorStyle",
+		"npe/separatorColor",
+		"npe/separatorCustomColor"
+	]
+}

@@ -1,0 +1,1 @@
+##This will be the development enviroment for this project. This project is a custom fork of woocommerce tailored to only newsrooms who use newspack and removes the bloat of other features such as shipping and inventory management.

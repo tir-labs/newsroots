@@ -1,0 +1,22 @@
+name: Bedrock
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  composer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: zip, mbstring
+          coverage: none
+      - name: Validate composer.json
+        run: composer validate --no-check-publish
+      - name: Install
+        run: composer install --no-interaction --prefer-dist
+      - name: Tests
+        run: composer test

@@ -1,0 +1,201 @@
+{
+  "name": "govpack/profile-self",
+  "style": [
+    "govpack-profile-style",
+    "npe-blocks-shared-styles",
+    "file:./view.css"
+  ],
+  "editorScript": "file:./index.js",
+  "category": "newspack-elections",
+  "styles": [
+    {
+      "name": "default",
+      "label": "Default",
+      "isDefault": true
+    },
+    {
+      "name": "red-tint",
+      "label": "Red Tint"
+    },
+    {
+      "name": "blue-tint",
+      "label": "Blue Tint"
+    },
+    {
+      "name": "yellow-tint",
+      "label": "Yellow Tint"
+    },
+    {
+      "name": "red",
+      "label": "Red"
+    },
+    {
+      "name": "blue",
+      "label": "Blue"
+    },
+    {
+      "name": "yellow",
+      "label": "Yellow"
+    }
+  ],
+  "attributes": {
+    "profileId": {
+      "type": "number",
+      "default": 0
+    },
+    "showAvatar": {
+      "type": "boolean",
+      "default": true
+    },
+    "avatarAlignment": {
+      "type": "string",
+      "default": "left"
+    },
+    "avatarBorderRadius": {
+      "type": "string",
+      "default": "0%"
+    },
+    "showOtherLinks": {
+      "type": "boolean",
+      "default": true
+    },
+    "avatarHideDefault": {
+      "type": "boolean",
+      "default": false
+    },
+    "showLabels": {
+      "type": "boolean",
+      "default": false
+    },
+    "labelsAbove": {
+      "type": "boolean",
+      "default": false
+    },
+    "showBio": {
+      "type": "boolean",
+      "default": false
+    },
+    "showName": {
+      "type": "boolean",
+      "default": false
+    },
+    "showStatusTag": {
+      "type": "boolean",
+      "default": false
+    },
+    "showWebsites": {
+      "type": "boolean",
+      "default": true
+    },
+    "showAge": {
+      "type": "boolean",
+      "default": false
+    },
+    "showLegislativeBody": {
+      "type": "boolean",
+      "default": true
+    },
+    "showPosition": {
+      "type": "boolean",
+      "default": true
+    },
+    "showParty": {
+      "type": "boolean",
+      "default": true
+    },
+    "showDistrict": {
+      "type": "boolean",
+      "default": false
+    },
+    "showState": {
+      "type": "boolean",
+      "default": true
+    },
+    "showStatus": {
+      "type": "boolean",
+      "default": true
+    },
+    "showSocial": {
+      "type": "boolean",
+      "default": true
+    },
+    "selectedSocial": {
+      "type": "object",
+      "default": {
+        "showOfficial": true,
+        "showCampaign": true,
+        "showPersonal": true
+      }
+    },
+    "showEmail": {
+      "type": "boolean",
+      "default": true
+    },
+    "align": {
+      "type": "string",
+      "default": "full"
+    },
+    "width": {
+      "type": "string",
+      "default": "full"
+    },
+    "showCapitolCommunicationDetails": {
+      "type": "boolean",
+      "default": true
+    },
+    "selectedCapitolCommunicationDetails": {
+      "type": "object",
+      "default": {
+        "showPhone": true,
+        "showFax": true,
+        "showEmail": true,
+        "showAddress": true,
+        "showWebsite": true
+      }
+    },
+    "showDistrictCommunicationDetails": {
+      "type": "boolean",
+      "default": true
+    },
+    "selectedDistrictCommunicationDetails": {
+      "type": "object",
+      "default": {
+        "showPhone": true,
+        "showFax": true,
+        "showEmail": true,
+        "showAddress": true,
+        "showWebsite": true
+      }
+    },
+    "showCampaignCommunicationDetails": {
+      "type": "boolean",
+      "default": true
+    },
+    "selectedCampaignCommunicationDetails": {
+      "type": "object",
+      "default": {
+        "showPhone": true,
+        "showFax": true,
+        "showEmail": true,
+        "showAddress": true,
+        "showWebsite": true
+      }
+    },
+    "showOtherCommunicationDetails": {
+      "type": "boolean",
+      "default": true
+    },
+    "selectedOtherCommunicationDetails": {
+      "type": "object",
+      "default": {}
+    },
+    "showEndorsements": {
+      "type": "boolean",
+      "default": true
+    },
+    "selectedLinks": {
+      "type": "object",
+      "default": {}
+    }
+  }
+}

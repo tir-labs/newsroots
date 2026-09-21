@@ -1,0 +1,21 @@
+{
+  "name": "elightup/slim-seo",
+  "description": "Lightweight SEO for WordPress, using WordPress AI for meta generation",
+  "type": "wordpress-plugin",
+  "license": "GPL-3.0-or-later",
+  "version": "4.10.1",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "seo",
+    "bedrock",
+    "sage"
+  ],
+  "require": {
+    "php": ">=8.3",
+    "composer/installers": "^2.0"
+  },
+  "extra": {
+    "installer-name": "slim-seo"
+  }
+}

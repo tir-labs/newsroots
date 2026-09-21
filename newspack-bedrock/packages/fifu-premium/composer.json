@@ -1,0 +1,21 @@
+{
+  "name": "featuredimagefromurl/fifu-premium",
+  "description": "fifu-premium",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "version": "7.1.9",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "newspack",
+    "bedrock"
+  ],
+  "homepage": "https://github.com/Postdated/Newspack",
+  "require": {
+    "php": ">=8.3",
+    "composer/installers": "^2.0"
+  },
+  "extra": {
+    "installer-name": "fifu-premium"
+  }
+}

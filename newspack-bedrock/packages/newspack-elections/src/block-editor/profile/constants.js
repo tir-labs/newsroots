@@ -1,0 +1,1 @@
+export const PROFILE_POST_TYPE = "govpack_profiles"

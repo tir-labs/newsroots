@@ -1,0 +1,1 @@
+(()=>{"use strict";(0,window.wp.hooks.addFilter)("newspack.wizards.campaigns.conflictingPrompts","newspack/multibranded-site/brand-selector-filter",((r,e)=>{if(r.length){const n=e.brand.length?e.brand.map((r=>r.term_id)):[];return 0===n.length?r:r.filter((r=>{if(r.brand.length){let e=!1;return r.brand.forEach((r=>{n.includes(r.term_id)&&(e=!0)})),e}return!0}))}return r}))})();

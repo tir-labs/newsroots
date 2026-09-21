@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: NewsWoo Documentation
+    url: https://github.com/Postdated/NewsWoo/blob/main/README.md
+    about: Read the project documentation before filing an issue
+  - name: Roadmap
+    url: https://github.com/Postdated/NewsWoo/blob/main/ROADMAP.md
+    about: Check the roadmap to see if your request is already planned
+

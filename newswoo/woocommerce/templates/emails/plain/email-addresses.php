@@ -1,0 +1,1 @@
+// Shipping address removed in NewsWoo

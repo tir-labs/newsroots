@@ -1,0 +1,97 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "npe/profile-row",
+	"title": "Profile Row",
+    "editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./index.css",
+	"category": "newspack-elections",
+	"supports" : {
+		"anchor": true,
+		"ariaLabel": true,
+		"color" : {
+			"background" : true,
+			"enableContrastChecker": true,
+			"gradients": true,
+			"link": true,
+			"text": true	
+		},
+		"layout" : {
+			"allowSwitching": false,
+			"allowSizingOnChildren": true,
+			"default" : {
+				"type" : "flex",
+				"justifyContent":"space-between",
+				"orientation": "horizontal"
+			}
+		},
+		"shadow": true, 
+		"spacing": {
+			"margin": true,  
+			"padding": true, 
+			"blockGap": true 
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"textAlign": true,
+			"__experimentalFontFamily": true,
+			"__experimentalTextDecoration": true,
+			"__experimentalFontStyle": true,
+			"__experimentalFontWeight": true,
+			"__experimentalLetterSpacing": true,
+			"__experimentalTextTransform": true,
+			"__experimentalWritingMode": true
+		},
+		"gp/field-aware" : true
+	},
+	"attributes": {
+		"style" : {
+			"type" : "object",
+			"default" : {
+				"layout" : {
+					"selfStretch":"fill",
+					"flexSize":null
+				}, 
+				"spacing" : {
+					"blockGap" : 0
+				}
+			}
+		},
+		"align": {
+			"type": "string"
+		},
+		"showLabel" : {
+			"type": "boolean",
+			"default" : true
+		},
+		"hideFieldIfEmpty" : {
+			"type": "boolean",
+			"default" : true
+		},
+		"label" : {
+			"type": "string"
+		}, 
+		"field" : {
+			"type" : "object",
+			"default" : {
+				"type" : "text"
+			}
+		}
+	},
+	"ancestor": [ "npe/profile" ],
+	"usesContext": [
+		"npe/showLabels", 
+		"postType",
+		"npe/postId",
+		"postId"
+	],
+	"providesContext": {
+		"npe/fieldKey": "fieldKey",
+		"npe/fieldType": "fieldType",
+		"npe/showLabel": "showLabel",
+		"npe/field": "field"
+	}
+	
+}

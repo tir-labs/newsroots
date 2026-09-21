@@ -1,0 +1,143 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "npe/profile",
+    "editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	
+	"style": ["npe-blocks-shared-styles", "file:./view.css"],
+	"category": "newspack-elections",
+	"styles": [
+        { "name": "default", "label": "Default", "isDefault": true },
+        { "name": "red-tint", "label": "Red Tint" },
+		{ "name": "blue-tint", "label": "Blue Tint" },
+		{ "name": "yellow-tint", "label": "Yellow Tint" },
+		{ "name": "red", "label": "Red" },
+		{ "name": "blue", "label": "Blue" },
+		{ "name": "yellow", "label": "Yellow" }
+    ],
+	"supports" : {
+		"anchor": true,
+		"align": [ "left", "center", "right"],
+		"alignWide": true,
+		"ariaLabel": true,
+		"color" : {
+			"background" : true,
+			"enableContrastChecker": true,
+			"gradients": true,
+			"heading": true,
+			"link": true,
+			"text": true
+		},
+		"layout" : {
+			"allowSwitching": false,
+			"allowVerticalAlignment": false,
+			"allowSizingOnChildren": true,
+			"allowJustification": false,
+			"allowEditing": true,
+			"allowOrientation": true,
+			"default" : {
+				"type" : "flex",
+				"orientation": "vertical",
+				"justifyContent": "stretch"
+			}
+		},
+		"dimensions": {
+			"minHeight": true
+		},
+		"shadow": true, 
+		"spacing": {
+			"margin": true,  
+			"padding": true, 
+			"blockGap": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"textAlign": true
+		},
+		"__experimentalBorder": {
+			"color" : true,
+			"radius" : true,
+			"width" : true,
+			"style" : true
+		}
+	},
+	"attributes": {
+		"variation" : {
+			"type": ["boolean", "string"],
+			"default": false
+		},
+		"preview" : {
+			"type": "boolean",
+			"default": false
+		},
+		"postId": {
+			"type": ["number", "string"]
+		},
+		"postType": {
+			"type": "string",
+			"default": "govpack_profiles"
+		},
+		"width": {
+			"type": "string"
+		},
+		"customWidth": {
+			"type": "string",
+			"default" : "250px"
+		},
+		"style": {
+			"type": "object",
+			"default" : {
+				"spacing":{
+					"blockGap":"0"
+				}
+			}
+		},
+		"tagName": {
+			"type": "string",
+			"default" : "div"
+		},
+		
+		"fontSize": {
+			"type": "string",
+			"default": "small"
+		},
+		
+		"verticalAlignment": {
+			"type": "string",
+			"default": "top"
+		}
+	},
+	"allowedBlocks": [ 
+		"core/block",
+		"core/spacer", 
+		"core/post-featured-image", 
+		"core/read-more", 
+		"core/post-excerpt", 
+		"core/group", 
+		"core/paragraph", 
+		"core/image", 
+		"core/heading", 
+		"npe/profile-row-group", 
+		"npe/profile-row", 
+		"npe/profile-bio",
+		"npe/profile-name", 
+		"npe/profile-read-more", 
+		"npe/profile-separator", 
+		"npe/profile-field-text",
+		"npe/profile-field-link",
+		"npe/profile-field-term",
+		"npe/profile-social-links"
+	],
+	"usesContext": [
+		"postType",
+		"postId",
+		"queryId"
+	],
+	"providesContext": {
+		
+		"postId" : "postId",
+		"postType" : "postType"
+	}
+}

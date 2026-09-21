@@ -1,0 +1,30 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Secrets
+.env
+.env.*
+!.env.example
+auth.json
+
+# Plugin archives (too large for git; use GitHub Releases)
+*.zip
+
+# Dependencies (each product installs its own)
+node_modules/
+
+
+# Dependencies (vendor)
+vendor/
+.phpunit.cache/
+
+# Local-only standalone checkouts
+Newspack/
+# WooCommerce source archives
+woocommerce*.zip
+source-assets/
+scope-source.md

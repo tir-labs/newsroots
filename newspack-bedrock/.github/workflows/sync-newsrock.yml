@@ -1,0 +1,20 @@
+name: Sync NewsRock
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tell NewsRock to pull this repo
+        env:
+          GH_TOKEN: ${{ secrets.NEWSROCK_SYNC_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "Optional: add repo secret NEWSROCK_SYNC_TOKEN (a PAT that can dispatch Postdated/NewsRock) so main pushes update the monorepo automatically."
+            echo "Until then run ./scripts/sync-to-newsrock.sh locally."
+            exit 0
+          fi
+          gh api --method POST repos/Postdated/NewsRock/dispatches -f event_type=sync-newspack

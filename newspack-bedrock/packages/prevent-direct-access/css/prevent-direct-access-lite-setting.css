@@ -1,0 +1,522 @@
+.main_container {
+    background-color: white;
+    padding: 0 20px 20px 20px;
+    margin-bottom: 20px;
+    border: 1px solid #CCC;
+    border-radius: 0 0 10px 10px;
+    filter: progid: DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#d9dee0', GradientType=0);
+}
+
+h1.nav-tab-wrapper,
+.wrap h2.nav-tab-wrapper,
+.nav-tab-wrapper {
+    border-bottom: none !important;
+}
+
+.wrap .main_container {
+    padding: 26px;
+}
+
+.wrap .main_container h3:first-of-type {
+    margin-top: 0;
+}
+
+@media (max-width: 767px) {
+    .notice.pda-notice {
+        padding: 10px;
+    }
+    .notice.pda-notice .pda-notice-inner {
+        display: block;
+    }
+    .notice.pda-notice .pda-notice-inner .pda-notice-content {
+        display: block;
+        padding: 0;
+    }
+    .notice.pda-notice .pda-notice-inner .pda-notice-icon,
+    .notice.pda-notice .pda-notice-inner .pda-install-now {
+        display: none;
+    }
+}
+
+@media only screen and (min-width: 1200px) {
+    .sortable {
+        width: 100%;
+    }
+    .wrap {
+        float: left;
+        width: 70%;
+        margin-right: 3%;
+    }
+}
+
+@media only screen and (max-width: 1200px) {
+    table.table {
+        width: 100% !important;
+    }
+}
+
+h1.nav-tab-wrapper,
+
+/* Back-compat for pre-4.4 */
+
+.wrap h2.nav-tab-wrapper,
+
+/* higher specificity to override .wrap > h2:first-child */
+
+.nav-tab-wrapper {
+    border-bottom: none !important;
+}
+
+.pda_switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+    margin-top: 7px;
+}
+
+.pda_switch input {
+    display: none;
+}
+
+.pda-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.pda-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    /*left: 2px;*/
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    top: 2px;
+    left: 2px;
+}
+
+input:checked+.pda-slider {
+    /*background-color: #0194F3;*/
+    background-color: #00B967;
+}
+
+input:focus+.pda-slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked+.pda-slider:before {
+    -webkit-transform: translateX(20px);
+    -ms-transform: translateX(20px);
+    transform: translateX(20px);
+}
+
+
+/* Rounded sliders */
+
+.pda-slider.round {
+    border-radius: 34px;
+    margin: 0;
+}
+
+.pda-slider.round:before {
+    border-radius: 50%;
+}
+
+.settings_table .width-100 {
+    width: 100px;
+}
+
+#pda_s3_license_form {
+    margin-bottom: 1rem;
+}
+
+#pda_s3_license_form h3 {
+    margin-bottom: 1rem;
+}
+
+.aws-btn-group {
+    margin-top: 3px;
+}
+
+.wrap .dashicons,
+.wrap .dashicons-before:before {
+    height: 15px;
+    font-size: 15px;
+}
+
+.pda-v3-gold-tooltip {
+    color: #A7A7A7;
+    margin-left: 5px;
+}
+
+.remove-no-access-page {
+    color: red;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+#migration-progress {
+    width: 100%;
+    background-color: #ECEBEC;
+}
+
+#migration-progress-bar {
+    width: 0;
+    height: 30px;
+    background-color: #00B967;
+    text-align: center;
+    line-height: 30px;
+    color: white;
+    transition: width .5s;
+    opacity: 0;
+}
+
+#migration-progress-bar.running {
+    opacity: 1;
+}
+
+.hide {
+    opacity: 0;
+    transition: opacity 1.3s;
+}
+
+ol.file-list {
+    list-style-type: none;
+    list-style-type: decimal !ie;
+    /*IE 7- hack*/
+    margin: 0;
+    margin-left: 3em;
+    padding: 0;
+    counter-reset: li-counter;
+}
+
+ol.file-list>li {
+    position: relative;
+    margin-bottom: 20px;
+    padding-left: 0.5em;
+    min-height: 3em;
+    border-left: 2px solid #CCCCCC;
+}
+
+ol.file-list>li:before {
+    position: absolute;
+    top: 0;
+    left: -1em;
+    width: 0.8em;
+    font-size: 3em;
+    line-height: 1;
+    font-weight: bold;
+    text-align: right;
+    color: #464646;
+    content: counter(li-counter);
+    counter-increment: li-counter;
+}
+
+.pda-license-info {
+    color: #00B967;
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+}
+
+.pda-license-info label {
+    color: #222;
+    width: 198px;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.pda-license-info.purchased-addons span {
+    max-width: 60%;
+    display: inline-block;
+}
+
+table.pda_v3_settings_table input {
+    width: 321px;
+    height: 100%;
+}
+
+.no-access-search-container {
+    position: absolute;
+    width: 300px;
+    max-height: 150px;
+    overflow: auto;
+    box-shadow: 0 0 1px #bbb;
+    z-index: 1000;
+}
+
+#pda_search_result {
+    margin: 0;
+}
+
+.no-access-default-page {
+    margin: 0 0 0.2rem;
+}
+
+.media-frame.mode-grid .pda-protected.attachment:focus {
+    box-shadow: inset 0 0 2px 3px #f1f1f1, inset 0 0 0 7px lightpink;
+}
+
+.pda-protected .attachment-preview {
+    box-shadow: 0px 0px 1.25rem red;
+}
+
+
+/* May 30 */
+
+table.settings_table select {
+    padding: 4px;
+    height: auto;
+    line-height: 28px;
+}
+
+.wrap .main_container h3 {
+    margin: 2rem 0 0.3rem;
+    line-height: 1.4;
+}
+
+.wrap .main_container h3:last-of-type {
+    display: flex;
+    align-items: center;
+}
+
+.pda_faq {
+    max-width: 540px;
+    text-align: justify;
+}
+
+.wrap .main_container p:first-of-type {
+    margin-top: 0;
+}
+
+.main_container .ip-block-title {
+    margin-bottom: 10px;
+}
+
+.settings_table td:first-of-type {
+    width: 260px;
+}
+
+.settings_table td {
+    vertical-align: middle;
+}
+
+
+/*Css page not found 404*/
+
+#pda_search_result li:nth-child(odd) {
+    background: #f9f9f9;
+}
+
+#pda_search_result li:nth-child(even) {
+    background: white;
+}
+
+#pda_search_result li {
+    display: block;
+    margin: 0;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #CCC;
+}
+
+#pda_search_result li.selected {
+    background: #ddd;
+}
+
+#pda_search_result li.selected:hover {
+    background: #ddd;
+}
+
+#pda_search_result li:hover {
+    background: #DDDDDD;
+}
+
+.wp-admin select {
+    margin-bottom: 3px;
+}
+
+#pda_license_form h3 {
+    margin-bottom: 1rem;
+}
+
+#enable_pda_v3_raw_url {
+    margin-left: 2em;
+}
+
+.nav-tab-wrapper .pda-quick-tour {
+    margin-left: 10px;
+}
+
+.pda_v3_settings_table {
+    width: 100%;
+    max-width: 800px;
+}
+
+.pda_v3_settings_table td {
+    padding: 4px;
+}
+
+.pda_v3_settings_table label {
+    font-size: 16px;
+    font-weight: bold;
+    display: block;
+}
+
+.pda_v3_settings_table td:first-of-type {
+    max-width: 120px;
+    width: 56px;
+}
+
+.pda_v3_settings_table td {
+    vertical-align: top;
+}
+
+.pda_v3_settings_table span.feature-input {
+    display: block;
+    background: #00B967;
+    height: 2px;
+    width: 40px;
+    margin-top: 7px;
+}
+
+.pda_v3_settings_table h3 {
+    font-weight: normal;
+    text-transform: uppercase;
+}
+
+.pda_v3_settings_table span.sub-label {
+    font-size: 16px;
+    display: block;
+}
+
+.pda_v3_settings_table hr {
+    margin: 1.5em 0;
+}
+
+.pda_v3_settings_table p {
+    margin-bottom: 0.4em;
+}
+
+.pda_v3_settings_table input[type="text"],
+.pda_v3_settings_table input[type="search"] {
+    width: 300px;
+    padding: 0 8px;
+}
+
+.pda_v3_settings_table input[type="submit"] {
+    width: auto;
+}
+
+.pda_v3_settings_table .no-access-selected-page {
+    margin-bottom: 0.4em;
+}
+
+.pda-textarea-for-multisite {
+    color: #106AC2;
+    line-height: 1.25em;
+    font-family: Monospace, Mono;
+    width: 100%;
+}
+
+.pda_upgrade_tooltip {
+    position: relative;
+}
+
+.pda_upgrade_advice a {
+    text-decoration: none;
+    color: #929292;
+    opacity: 1;
+}
+
+.pda_upgrade_advice a:hover {
+    text-decoration: none;
+    color: #007cba;
+}
+
+.pda_upgrade_advice a:hover .dashicons-lock:before {
+    content: "\f528";
+}
+
+.pda_upgrade_advice span.dashicons-lock {
+    position: relative;
+    font-size: 15px;
+    transform: translate(0, 25%);
+    display: inline-block;
+}
+
+.pda_upgrade_tooltip {
+    content: attr(data-tooltip);
+    position: absolute;
+    padding: 8px;
+    transition: transform 0.2s ease-in-out;
+    -moz-transition: transform 0.2s ease-in-out;
+    background: #616161e6;
+    color: white;
+    border-radius: 5px;
+    font-size: 12px;
+    font-family: Roboto, sans-serif;
+    font-weight: 400;
+    top: -35px;
+    bottom: auto;
+    transform: translateX(-50%) scale(0);
+    -moz-transform: translateX(-50%) scale(0);
+    transform-origin: bottom center;
+    -moz-transform-origin: bottom center;
+    width: 160px;
+}
+
+.pda_upgrade_advice a:hover .pda_upgrade_tooltip {
+    transform: translateX(-50%) scale(1);
+}
+
+.pda-version {
+    background: #397BBF;
+    font-size: 0.9rem;
+    color: white;
+    padding: 0.1rem 0.4rem 0.15rem;
+    display: inline-block;
+    border-radius: 4px;
+    line-height: 1.5;
+    vertical-align: top;
+    margin-left: 0.3rem;
+}
+
+.pda_faq ul {
+    list-style-type: disc !important;
+    margin-left: 30px;
+}
+
+#pda_right_column_metaboxes img {
+    max-width: 100%;
+    height: auto;
+}
+
+div#pda_right_column_metaboxes h1 {
+    line-height: 30px;
+}
+
+div#pda_right_column_metaboxes ul > li > ul {
+    list-style: inside;
+}
+
+div#pda_right_column_metaboxes ul {
+    list-style: inherit;
+    margin-left: 15px;
+}
+
+div#pda_right_column_metaboxes .main_container {
+    padding-top: 20px;
+}
+
+tr.pda-gray-out{
+    color: #c6b2b2;
+}

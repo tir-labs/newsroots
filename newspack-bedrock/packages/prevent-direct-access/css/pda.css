@@ -1,0 +1,44 @@
+.protected_yes { 
+    color: #00CC00; 
+}
+
+.protected_no { 
+    color: red; 
+}
+
+.pda_subscribe_error span {
+    color: #cc0000
+}
+
+.pda_sub_div {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: #333;
+    display:block;
+    white-space:normal;
+}
+
+.pda_gold_btn {
+    cursor: pointer;
+}
+
+.pda_form {
+    height: 370px;
+    overflow-y: auto;
+    margin-top: 20px; }
+.pda_form input[type=text], .pda_form input[type=number], .pda_form select {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    height: 100%; }
+.pda_form .btn {
+    margin-right: 5px;
+    margin-bottom: 35px; }
+.pda_form .error {
+    color: red; }
+.pda_form .actions {
+    margin-top: 10px; }

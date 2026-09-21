@@ -1,0 +1,26 @@
+{
+  "name": "postdated/newsroom-image-downloader",
+  "description": "newsroom-image-downloader",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "version": "1.1.0",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "newspack",
+    "bedrock"
+  ],
+  "homepage": "https://github.com/Postdated/Newspack",
+  "require": {
+    "php": ">=8.3",
+    "composer/installers": "^2.0"
+  },
+  "extra": {
+    "installer-name": "newsroom-image-downloader"
+  },
+  "autoload": {
+    "classmap": [
+      "newsroom-image-downloader.php"
+    ]
+  }
+}

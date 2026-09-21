@@ -1,0 +1,9 @@
+.wp-block-govpack-profile-separator {
+	border-top: 2px solid currentColor;
+	// Default, thin style, is stored in theme.scss so it can be opted out of
+
+	// Unset the left, right and bottom borders by default, otherwise some browsers will render them as "inset".
+	border-left: none;
+	border-right: none;
+	border-bottom: none;
+}

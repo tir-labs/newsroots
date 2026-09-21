@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "npe/profile-field-text",
+  "title": "Profile Field Text",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./index.css",
+  "category": "newspack-elections",
+  "example": {
+    "attributes": {
+      "fieldType": "text",
+      "fieldKey": "name"
+    }
+  },
+  "supports": {
+    "anchor": true,
+    "aria-label": true,
+    "color": {
+      "background": true,
+      "enableContrastChecker": true,
+      "gradients": true,
+      "link": true,
+      "text": true
+    },
+    "layout": {
+      "allowSwitching": false,
+      "default": {
+        "type": "flex"
+      }
+    },
+    "shadow": true,
+    "spacing": {
+      "margin": true,
+      "padding": true,
+      "blockGap": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "textAlign": true
+    },
+    "gp/field-aware": {
+      "type": "text"
+    }
+  },
+  "attributes": {},
+  "ancestor": [
+    "npe/profile"
+  ],
+  "usesContext": [
+    "npe/fieldKey",
+    "npe/fieldType",
+    "npe/showLabels",
+    "npe/field",
+    "postType",
+    "queryId",
+    "postId",
+    "npe/postId"
+  ]
+}

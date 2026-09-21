@@ -1,0 +1,85 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "npe/profile-row-group",
+  "title": "Profile Group",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./index.css",
+  "category": "newspack-elections",
+  "supports": {
+    "align": true,
+    "alignWide": true,
+    "layout": {
+      "allowSwitching": false,
+      "allowJustification": true,
+      "allowSizingOnChildren": false,
+      "allowEditing": true,
+      "default": {
+        "type": "flex",
+        "justifyContent": "stretch",
+        "orientation": "vertical"
+      }
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true,
+      "blockGap": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "textAlign": true
+    }
+  },
+  "attributes": {
+    "layout": {
+      "type": "object"
+    },
+    "showSeparator": {
+      "type": "boolean",
+      "default": true
+    },
+    "showLabels": {
+      "type": "boolean",
+      "default": true
+    },
+    "separatorStyles": {
+      "type": "object",
+      "default": {}
+    },
+    "separatorColor": {
+      "type": "string"
+    },
+    "separatorCustomColor": {
+      "type": "string"
+    }
+  },
+  "ancestor": [
+    "npe/profile"
+  ],
+  "usesContext": [
+    "postType",
+    "npe/postId",
+    "npe/profileId",
+    "profileId"
+  ],
+  "providesContext": {
+    "npe/separatorStyle": "separatorStyles",
+    "npe/separatorColor": "separatorColor",
+    "npe/separatorCustomColor": "separatorCustomColor",
+    "npe/showLabels": "showLabels"
+  },
+  "allowedBlocks": [
+    "npe/profile-row",
+    "npe/profile-read-more",
+    "npe/profile-separator",
+    "npe/profile-bio",
+    "npe/profile-name",
+    "npe/profile-social-links",
+    "core/post-featured-image",
+    "core/heading",
+    "core/paragraph",
+    "core/group"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "preset": "per",
+  "exclude": [
+    "web/wp",
+    "web/app/mu-plugins/bedrock-disallow-indexing",
+    "web/app/plugins",
+    "web/app/themes/twentytwentyfive",
+    "packages/co-authors-plus",
+    "packages/fifu-premium",
+    "packages/flux-media-optimizer",
+    "packages/newspack-ads",
+    "packages/newspack-blocks",
+    "packages/newspack-cache-cozy",
+    "packages/newspack-elections",
+    "packages/newspack-multibranded-site",
+    "packages/newspack-newsletters",
+    "packages/newspack-plugin",
+    "packages/newspack-popups",
+    "packages/newspack-post-image-downloader",
+    "packages/newspack-revisions-enhanced",
+    "packages/newspack-rolling-coverage",
+    "packages/newspack-sponsors",
+    "packages/newspack-story-budget",
+    "newspack-originals",
+    "discord-bot"
+  ]
+}

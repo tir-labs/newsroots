@@ -1,0 +1,21 @@
+{
+  "name": "onesignal/onesignal-free-web-push-notifications",
+  "description": "OneSignal web push notifications",
+  "type": "wordpress-plugin",
+  "license": "MIT",
+  "version": "3.9.3",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "push",
+    "bedrock",
+    "newspack"
+  ],
+  "require": {
+    "php": ">=8.3",
+    "composer/installers": "^2.0"
+  },
+  "extra": {
+    "installer-name": "onesignal-free-web-push-notifications"
+  }
+}

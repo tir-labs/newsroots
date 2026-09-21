@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"baseUrl": "./src",
+		"jsx": "react",
+		"paths": {
+			"@npe/editor" : ["block-editor/index"]
+		}
+	},
+	"exclude": ["node_modules"]
+  }

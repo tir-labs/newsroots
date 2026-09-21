@@ -1,0 +1,265 @@
+<?php
+/**
+ * @license MIT
+ *
+ * Modified by govpack on 11-September-2026 using {@see https://github.com/BrianHenryIE/strauss}.
+ */
+
+declare(strict_types=1);
+
+namespace Govpack\Vendor\z4kn4fein\SemVer\Constraints;
+
+use Govpack\Vendor\z4kn4fein\SemVer\Patterns;
+use Govpack\Vendor\z4kn4fein\SemVer\SemverException;
+use Govpack\Vendor\z4kn4fein\SemVer\Traits\Validator;
+use Govpack\Vendor\z4kn4fein\SemVer\Version;
+
+/**
+ * @internal
+ */
+class VersionDescriptor
+{
+    use Validator;
+
+    private string $major;
+    private ?string $minor;
+    private ?string $patch;
+    private ?string $preRelease;
+    private ?string $buildMeta;
+    private bool $isMajorWildcard;
+    private bool $isMinorWildCard;
+    private bool $isPatchWildCard;
+    private bool $isWildCard;
+
+    public function __construct(string $major, ?string $minor, ?string $patch, ?string $preRelease, ?string $buildMeta)
+    {
+        $this->major = $major;
+        $this->minor = $minor;
+        $this->patch = $patch;
+        $this->preRelease = $preRelease;
+        $this->buildMeta = $buildMeta;
+
+        $this->isMajorWildcard = Patterns::isWildcard($major);
+        $this->isMinorWildCard = is_null($minor) || Patterns::isWildcard($minor);
+        $this->isPatchWildCard = is_null($patch) || Patterns::isWildcard($patch);
+        $this->isWildCard = $this->isMajorWildcard || $this->isMinorWildCard || $this->isPatchWildCard;
+    }
+
+    /**
+     * @return string the string representation of the descriptor
+     */
+    public function __toString(): string
+    {
+        $result = $this->major;
+        $result .= isset($this->minor) ? '.'.$this->minor : '';
+        $result .= isset($this->patch) ? '.'.$this->patch : '';
+        $result .= isset($this->preRelease) ? '-'.$this->preRelease : '';
+        $result .= isset($this->buildMeta) ? '+'.$this->buildMeta : '';
+
+        return $result;
+    }
+
+    /**
+     * @throws SemverException
+     */
+    public function getIntMajor(): int
+    {
+        self::ensure(is_numeric($this->major), sprintf('Invalid MAJOR number in: %s', (string) $this));
+
+        return intval($this->major);
+    }
+
+    /**
+     * @throws SemverException
+     */
+    public function getIntMinor(): int
+    {
+        self::ensure(is_numeric($this->minor), sprintf('Invalid MINOR number in: %s', (string) $this));
+
+        return intval($this->minor);
+    }
+
+    /**
+     * @throws SemverException
+     */
+    public function getIntPatch(): int
+    {
+        self::ensure(is_numeric($this->patch), sprintf('Invalid PATCH number in: %s', (string) $this));
+
+        return intval($this->patch);
+    }
+
+    /**
+     * @throws SemverException
+     */
+    public function fromOperator(string $operator): VersionComparator
+    {
+        if (in_array($operator, Patterns::COMPARISON_OPERATORS, true) || '' === $operator) {
+            return $this->toComparator($operator);
+        }
+
+        if (in_array($operator, Patterns::TILDE_OPERATORS, true)) {
+            return $this->fromTilde();
+        }
+        if (Patterns::CARET_OPERATOR === $operator) {
+            return $this->fromCaret();
+        }
+
+        throw new SemverException(sprintf('Invalid constraint operator: %s in %s', $operator, (string) $this));
+    }
+
+    /**
+     * @throws SemverException
+     */
+    public function toComparator(string $operator = Op::EQUAL): VersionComparator
+    {
+        if ($this->isMajorWildcard) {
+            switch ($operator) {
+                case Op::GREATER_THAN:
+                case Op::LESS_THAN:
+                case Op::NOT_EQUAL:
+                    return new Condition(
+                        Op::LESS_THAN,
+                        Version::minVersion()->copy(null, null, null, '')
+                    );
+
+                default:
+                    return Condition::greaterThanMin();
+            }
+        } elseif ($this->isMinorWildCard) {
+            $version = Version::create($this->getIntMajor(), 0, 0, $this->preRelease, $this->buildMeta);
+
+            return new Range(
+                new Condition(Op::GREATER_THAN_OR_EQUAL, $version),
+                new Condition(Op::LESS_THAN, $version->getNextMajorVersion('')),
+                $operator
+            );
+        } elseif ($this->isPatchWildCard) {
+            $version = Version::create(
+                $this->getIntMajor(),
+                $this->getIntMinor(),
+                0,
+                $this->preRelease,
+                $this->buildMeta
+            );
+
+            return new Range(
+                new Condition(Op::GREATER_THAN_OR_EQUAL, $version),
+                new Condition(Op::LESS_THAN, $version->getNextMinorVersion('')),
+                $operator
+            );
+        } else {
+            return new Condition($operator, Version::create(
+                $this->getIntMajor(),
+                $this->getIntMinor(),
+                $this->getIntPatch(),
+                $this->preRelease,
+                $this->buildMeta
+            ));
+        }
+    }
+
+    /**
+     * @throws SemverException
+     */
+    private function fromTilde(): VersionComparator
+    {
+        if ($this->isWildCard) {
+            return $this->toComparator();
+        }
+        $version = Version::create(
+            $this->getIntMajor(),
+            $this->getIntMinor(),
+            $this->getIntPatch(),
+            $this->preRelease,
+            $this->buildMeta
+        );
+
+        return new Range(
+            new Condition(Op::GREATER_THAN_OR_EQUAL, $version),
+            new Condition(Op::LESS_THAN, $version->getNextMinorVersion('')),
+            Op::EQUAL
+        );
+    }
+
+    /**
+     * @throws SemverException
+     */
+    private function fromCaret(): VersionComparator
+    {
+        if ($this->isMajorWildcard) {
+            return Condition::greaterThanMin();
+        }
+        if ($this->isMinorWildCard) {
+            return $this->fromMinorCaret();
+        }
+        if ($this->isPatchWildCard) {
+            return $this->fromPatchCaret();
+        }
+
+        $version = Version::create(
+            $this->getIntMajor(),
+            $this->getIntMinor(),
+            $this->getIntPatch(),
+            $this->preRelease,
+            $this->buildMeta
+        );
+
+        $endVersion = Version::create(0, 0, 1, '');
+        if ('0' !== $this->major) {
+            $endVersion = $version->getNextMajorVersion('');
+        } elseif ('0' !== $this->minor) {
+            $endVersion = $version->getNextMinorVersion('');
+        } elseif ('0' !== $this->patch) {
+            $endVersion = $version->getNextPatchVersion('');
+        }
+
+        return new Range(
+            new Condition(Op::GREATER_THAN_OR_EQUAL, $version),
+            new Condition(Op::LESS_THAN, $endVersion),
+            Op::EQUAL
+        );
+    }
+
+    /**
+     * @throws SemverException
+     */
+    private function fromMinorCaret(): VersionComparator
+    {
+        if ('0' === $this->major) {
+            return new Range(
+                Condition::greaterThanMin(),
+                new Condition(Op::LESS_THAN, Version::create(1, 0, 0, '')),
+                Op::EQUAL
+            );
+        }
+
+        return $this->toComparator();
+    }
+
+    /**
+     * @throws SemverException
+     */
+    private function fromPatchCaret(): VersionComparator
+    {
+        if ('0' === $this->major && '0' === $this->minor) {
+            return new Range(
+                Condition::greaterThanMin(),
+                new Condition(Op::LESS_THAN, Version::create(0, 1, 0, '')),
+                Op::EQUAL
+            );
+        }
+
+        if ('0' !== $this->major) {
+            $version = Version::create($this->getIntMajor(), $this->getIntMinor(), 0);
+
+            return new Range(
+                new Condition(Op::GREATER_THAN_OR_EQUAL, $version),
+                new Condition(Op::LESS_THAN, $version->getNextMajorVersion('')),
+                Op::EQUAL
+            );
+        }
+
+        return $this->toComparator();
+    }
+}

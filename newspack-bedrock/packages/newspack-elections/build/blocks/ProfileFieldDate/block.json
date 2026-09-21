@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "npe/profile-field-date",
+  "title": "Profile Field Date",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./index.css",
+  "category": "newspack-elections",
+  "example": {
+    "attributes": {
+      "fieldType": "date",
+      "fieldKey": "name"
+    }
+  },
+  "supports": {
+    "anchor": true,
+    "aria-label": true,
+    "color": {
+      "background": true,
+      "enableContrastChecker": true,
+      "gradients": true,
+      "text": true
+    },
+    "layout": {
+      "allowSwitching": false,
+      "default": {
+        "type": "flex"
+      }
+    },
+    "shadow": true,
+    "spacing": {
+      "margin": true,
+      "padding": true,
+      "blockGap": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "textAlign": true
+    },
+    "gp/field-aware": {
+      "type": "date"
+    }
+  },
+  "attributes": {
+    "dateFormat": {
+      "type": "string"
+    }
+  },
+  "ancestor": [
+    "npe/profile"
+  ],
+  "usesContext": [
+    "npe/field",
+    "npe/fieldKey",
+    "npe/fieldType",
+    "npe/showLabels",
+    "postType",
+    "npe/postId",
+    "queryId",
+    "postId"
+  ]
+}

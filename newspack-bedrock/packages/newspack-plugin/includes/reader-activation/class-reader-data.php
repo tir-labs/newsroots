@@ -1,0 +1,814 @@
+<?php
+/**
+ * Reader Activation Data Library Class.
+ *
+ * @package Newspack
+ */
+
+namespace Newspack;
+
+use Newspack\Memberships;
+
+require_once NEWSPACK_ABSPATH . 'includes/reader-activation/cli/class-sync-reader-data-cli.php';
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Reader Data Class.
+ */
+final class Reader_Data {
+
+	// Maximum number of items per user.
+	const MAX_ITEMS = 100;
+
+	/**
+	 * Reader activity to push.
+	 *
+	 * @var array
+	 */
+	private static $reader_activity = [];
+
+	/**
+	 * Initialize hooks.
+	 */
+	public static function init() {
+		add_action( 'rest_api_init', [ __CLASS__, 'register_routes' ] );
+		add_action( 'wp', [ __CLASS__, 'setup_reader_activity' ] );
+		add_action( 'wp_enqueue_scripts', [ __CLASS__, 'config_script' ] );
+		add_action( 'init', [ __CLASS__, 'register_data_event_handlers' ] );
+		add_filter( 'newspack_session_hydration_response', [ __CLASS__, 'add_reader_data_to_hydration' ], 10, 2 );
+	}
+
+	/**
+	 * Add reader data items to the session hydration response.
+	 *
+	 * @param array $data    Hydration response data.
+	 * @param int   $user_id The authenticated user's ID.
+	 *
+	 * @return array Filtered response data.
+	 */
+	public static function add_reader_data_to_hydration( $data, $user_id ) {
+		$data['reader_data_items'] = self::get_data( $user_id );
+		return $data;
+	}
+
+	/**
+	 * Enumerate read-only keys.
+	 *
+	 * Server is the source of truth for these keys, and they
+	 * shouldn't be written to or deleted by the client.
+	 *
+	 * This list is surfaced to the client as
+	 * `newspack_reader_data.read_only_keys` to allow browser-side
+	 * validation and more graceful error handling.
+	 *
+	 * Implemented in a filter hook to permit plugins to alter the list.
+	 *
+	 * @return string[] Names of read-only keys.
+	 */
+	public static function get_read_only_keys() {
+		$keys = [
+			'active_memberships',
+			'active_subscriptions',
+			'is_former_donor',
+			'newsletter_subscribed_lists',
+		];
+
+		// is_donor is only read-only when the platform has a secure server-side
+		// mechanism to manage donor status. Currently only WooCommerce has this
+		// via the donation_new data event. Non-Woo platforms (NRH, other) rely
+		// on client-side writes from the donor landing page.
+		//
+		// Note: when is_donor is NOT read-only, any authenticated reader can
+		// set it via the REST API. This is an intentional trade-off — is_donor
+		// is used for segmentation and analytics, not access control. Consumers
+		// that need to distinguish server-verified from client-asserted donor
+		// status should check Donations::has_server_side_donor_tracking().
+		if ( Donations::has_server_side_donor_tracking() ) {
+			$keys[] = 'is_donor';
+		}
+
+		/**
+		 * Filters the list of read-only reader data keys.
+		 *
+		 * This list is used for both client-side configuration (via wp_localize_script)
+		 * and server-side REST API enforcement. Note that filter callbacks relying on
+		 * page-context conditionals (is_page, get_the_ID, etc.) will only affect the
+		 * client-side path.
+		 *
+		 * @param string[] $keys Names of read-only keys.
+		 */
+		return apply_filters( 'newspack_reader_data_read_only_keys', $keys );
+	}
+
+	/**
+	 * Register all data event handlers.
+	 */
+	public static function register_data_event_handlers() {
+		/* Update reader data items on data event dispatches */
+		Data_Events::register_handler( [ __CLASS__, 'update_newsletter_subscribed_lists' ], 'newsletter_subscribed' );
+		Data_Events::register_handler( [ __CLASS__, 'update_newsletter_subscribed_lists' ], 'newsletter_updated' );
+		Data_Events::register_handler( [ __CLASS__, 'set_is_donor' ], 'donation_new' );
+		Data_Events::register_handler( [ __CLASS__, 'set_is_former_donor' ], 'donation_subscription_cancelled' );
+		Data_Events::register_handler( [ __CLASS__, 'update_active_subscriptions' ], 'product_subscription_changed' );
+		Data_Events::register_handler( [ __CLASS__, 'update_active_memberships' ], 'membership_status_active' );
+		Data_Events::register_handler( [ __CLASS__, 'update_active_memberships' ], 'membership_status_inactive' );
+		Data_Events::register_handler( [ __CLASS__, 'check_newsletter_subscription' ], 'reader_logged_in' );
+		Data_Events::register_handler( [ __CLASS__, 'check_product_subscriptions' ], 'reader_logged_in' );
+		Data_Events::register_handler( [ __CLASS__, 'check_memberships' ], 'reader_logged_in' );
+	}
+
+	/**
+	 * Add config to the data script.
+	 */
+	public static function config_script() {
+		/**
+		 * Filters the localStorage store item prefix.
+		 *
+		 * @param string $store_prefix Prefix.
+		 */
+		$store_prefix = apply_filters(
+			'newspack_reader_data_store_prefix',
+			sprintf( 'np_reader_%d_', \get_current_blog_id() )
+		);
+
+		/**
+		 * Allows for "temporary" reader data for things like previews.
+		 * If true, the store will use sessionStorage instead of localStorage.
+		 */
+		$is_temporary = apply_filters( 'newspack_reader_data_store_is_temp_session', false );
+
+		$config = [
+			'store_prefix'    => $store_prefix,
+			'is_temporary'    => $is_temporary,
+			'reader_activity' => self::$reader_activity,
+			'read_only_keys'  => self::get_read_only_keys(),
+			'api_url'         => \get_rest_url( null, NEWSPACK_API_NAMESPACE . '/reader-data' ),
+			'session_url'     => \get_rest_url( null, NEWSPACK_API_NAMESPACE . '/reader/session' ),
+		];
+
+		if ( \is_user_logged_in() ) {
+			$config['nonce'] = \wp_create_nonce( 'wp_rest' );
+			$config['items'] = self::get_data( \get_current_user_id() );
+		}
+
+		wp_localize_script( Reader_Activation::SCRIPT_HANDLE, 'newspack_reader_data', $config );
+	}
+
+	/**
+	 * Register routes.
+	 */
+	public static function register_routes() {
+		\register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/reader-data',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ __CLASS__, 'api_update_item' ],
+				'permission_callback' => [ __CLASS__, 'permission_callback' ],
+				'args'                => [
+					'key'   => [
+						'type' => 'string',
+					],
+					'value' => [
+						'type' => 'string',
+					],
+				],
+			]
+		);
+		\register_rest_route(
+			NEWSPACK_API_NAMESPACE,
+			'/reader-data',
+			[
+				'methods'             => 'DELETE',
+				'callback'            => [ __CLASS__, 'api_delete_item' ],
+				'permission_callback' => [ __CLASS__, 'permission_callback' ],
+				'args'                => [
+					'key' => [
+						'type' => 'string',
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Whether the current user can access the API.
+	 */
+	public static function permission_callback() {
+		return \is_user_logged_in();
+	}
+
+	/**
+	 * Get the user meta key.
+	 *
+	 * @param string $key Key.
+	 */
+	public static function get_meta_key_name( $key ) {
+		return 'newspack_reader_data_item_' . $key;
+	}
+
+	/**
+	 * Get reader data.
+	 *
+	 * @param string $user_id User ID.
+	 * @param string $key     Optional key to return.
+	 *
+	 * @return mixed Key data if provided, array of data or false if key not found.
+	 */
+	public static function get_data( $user_id, $key = '' ) {
+		$user_keys = \get_user_meta( $user_id, 'newspack_reader_data_keys', true );
+		if ( ! $user_keys ) {
+			return ! empty( $key ) ? false : [];
+		}
+
+		if ( $key ) {
+			if ( ! in_array( $key, $user_keys, true ) ) {
+				return false;
+			}
+			return \get_user_meta( $user_id, self::get_meta_key_name( $key ), true );
+		}
+
+		$data = [];
+		foreach ( $user_keys as $key ) {
+			$data[ $key ] = \get_user_meta( $user_id, self::get_meta_key_name( $key ), true );
+		}
+
+		return $data;
+	}
+
+	/**
+	 * The reader's last-known matching segment IDs (term IDs as strings), or [].
+	 *
+	 * Client-computed snapshot: a best-effort record of the reader's segment
+	 * membership as of their last page view, written by the browser via the
+	 * `matched_segments` reader-data item — not a live re-evaluation. Consumers
+	 * must treat it as client-asserted.
+	 *
+	 * @param int $user_id User ID.
+	 *
+	 * @return string[] Matching segment IDs, or [] when unknown/malformed.
+	 */
+	public static function get_matched_segments( int $user_id ): array {
+		$raw = self::get_data( $user_id, 'matched_segments' );
+		$ids = is_string( $raw ) ? json_decode( $raw, true ) : ( is_array( $raw ) ? $raw : [] );
+		if ( ! is_array( $ids ) ) {
+			return [];
+		}
+		// Client-asserted JSON: drop non-scalar members (e.g. a nested array in a
+		// malformed `[[1,2],3]` payload) before stringifying, so a bad payload can't
+		// raise an "Array to string conversion" warning or yield "Array" entries.
+		return array_values( array_map( 'strval', array_filter( $ids, 'is_scalar' ) ) );
+	}
+
+	/**
+	 * The reader's stored newsletter list IDs (as strings), or null when unknown.
+	 *
+	 * Null means the selection cannot be trusted: nothing was ever stored, or the
+	 * stored value is not a plain JSON list. A list that lost its shape (a JSON
+	 * object left by an earlier writer) may also have dropped later changes, so a
+	 * consumer that publishes the selection, like the Newsletter Selection ESP
+	 * field, must treat it as unknown rather than as a partial answer. The
+	 * newsletter data event handler repairs such a value on the next change.
+	 *
+	 * @param int $user_id User ID.
+	 *
+	 * @return string[]|null List IDs (possibly empty), or null when unknown.
+	 */
+	public static function get_newsletter_subscribed_lists( int $user_id ): ?array {
+		$raw = self::get_data( $user_id, 'newsletter_subscribed_lists' );
+		if ( false === $raw ) {
+			return null;
+		}
+		$ids = is_string( $raw ) ? json_decode( $raw, true ) : $raw;
+		// array_is_list() is PHP 8.1+ and the plugin's floor is 8.0.
+		if ( ! is_array( $ids ) || $ids !== array_values( $ids ) ) {
+			return null;
+		}
+		return array_values( array_map( 'strval', array_filter( $ids, 'is_scalar' ) ) );
+	}
+
+	/**
+	 * Decode a stored list-type reader data item (active_memberships,
+	 * active_subscriptions) into an array of IDs.
+	 *
+	 * Values written through update_item() are JSON arrays, but legacy writers
+	 * stored a bare scalar (`123`) or a comma-separated list (`123,456`) — the
+	 * shapes the sync-memberships CLI produced before NPPM-3205. Recover those
+	 * instead of letting a data event handler fatal on them: the handler then
+	 * writes the list back through update_item(), repairing the stored value.
+	 *
+	 * @param mixed $value Stored item value.
+	 *
+	 * @return array List of IDs.
+	 */
+	private static function decode_item_list( mixed $value ): array {
+		// A writer that handed update_user_meta() a real array gets it back
+		// unserialized; pass it through rather than resetting the reader's list.
+		if ( is_array( $value ) ) {
+			return array_values( array_filter( $value, 'is_scalar' ) );
+		}
+		// Explicit empty-string check: a stored "0" is a value, not an absence,
+		// matching the falsy-zero contract documented on validate_prepared_item().
+		if ( ! is_string( $value ) || '' === $value ) {
+			return [];
+		}
+		$decoded = json_decode( $value );
+		if ( is_array( $decoded ) ) {
+			return array_values( array_filter( $decoded, 'is_scalar' ) );
+		}
+		if ( is_numeric( $decoded ) ) {
+			return [ $decoded ];
+		}
+		if ( preg_match( '/^\d+(,\d+)*$/', $value ) ) {
+			return array_map( 'intval', explode( ',', $value ) );
+		}
+		return [];
+	}
+
+	/**
+	 * Stringify and sanitize a value for storage.
+	 *
+	 * @param mixed $value Value.
+	 *
+	 * @return string|WP_Error The storable string, or error object if unencodable.
+	 */
+	private static function prepare_item_value( $value ) {
+		if ( ! is_string( $value ) ) {
+			$value = wp_json_encode( $value );
+		}
+
+		// A value that could not be JSON-encoded (e.g. NAN, a resource) is unusable.
+		if ( false === $value ) {
+			return new \WP_Error( 'invalid_value', __( 'Invalid value.', 'newspack' ), [ 'status' => 400 ] );
+		}
+
+		return sanitize_text_field( $value );
+	}
+
+	/**
+	 * Read the reader's registered data keys.
+	 *
+	 * @param string $user_id User ID.
+	 *
+	 * @return string[] The reader's data keys.
+	 */
+	private static function get_item_keys( $user_id ) {
+		$user_keys = \get_user_meta( $user_id, 'newspack_reader_data_keys', true );
+		return $user_keys ? $user_keys : [];
+	}
+
+	/**
+	 * Validate an already-prepared value against the per-reader key cap.
+	 *
+	 * Split from validate_item() so update_item() can reuse the value it
+	 * prepared and the keys it read, instead of doing both twice.
+	 *
+	 * @param string   $user_id   User ID.
+	 * @param string   $key       Key.
+	 * @param string   $value     Prepared (stringified, sanitized) value.
+	 * @param string[] $user_keys The reader's current data keys.
+	 *
+	 * @return true|WP_Error True if the write would be accepted, error object otherwise.
+	 */
+	private static function validate_prepared_item( $user_id, $key, $value, $user_keys ) {
+		// Only an empty string is invalid. A falsy-but-meaningful scalar must
+		// still store: a numeric zero JSON-encodes to the string "0", which PHP
+		// treats as falsy, so a loose `! $value` check would reject legitimate
+		// zero values (a donation count, a score). On the integrations pull path
+		// that rejection is permanent — the reader fails every pull and is
+		// re-enqueued indefinitely — so the value could never be stored.
+		if ( '' === $value ) {
+			return new \WP_Error( 'invalid_value', __( 'Invalid value.', 'newspack' ), [ 'status' => 400 ] );
+		}
+
+		/**
+		 * Filter the maximum number of items per user.
+		 *
+		 * @param int    $max_items Maximum number of items.
+		 * @param int    $user_id   User ID.
+		 * @param string $key       Key.
+		 * @param string $value     Value.
+		 */
+		$max_items = apply_filters( 'newspack_reader_data_max_items', self::MAX_ITEMS, $user_id, $key, $value );
+
+		// The cap bounds how many keys a reader accumulates, so only a NEW key
+		// can breach it — refreshing an already-stored item doesn't grow the
+		// list. Enforcing it unconditionally would strand an at-cap reader:
+		// their stored fields could never be updated again, and since a rejected
+		// write is permanent-class on the pull path, every re-pull would fail
+		// with no operator remedy short of deleting reader data.
+		if ( ! in_array( $key, $user_keys, true ) && count( $user_keys ) >= $max_items ) {
+			return new \WP_Error( 'too_many_items', __( 'Too many items.', 'newspack' ), [ 'status' => 400 ] );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Whether a reader data item would be accepted by update_item().
+	 *
+	 * Both rejection causes are deterministic and depend only on the value and
+	 * the reader's key list, so callers that preview writes — the integrations
+	 * backfill dry-run — can report them without persisting.
+	 *
+	 * @param string   $user_id      User ID.
+	 * @param string   $key          Key.
+	 * @param mixed    $value        Value.
+	 * @param string[] $pending_keys Optional. Keys an in-progress preview has already
+	 *                               accepted but not persisted, so a batch of new keys
+	 *                               is validated against the count it would really
+	 *                               reach. These join the reader's stored keys for both
+	 *                               the cap count and the membership test, so a caller
+	 *                               must only pass keys this method already accepted —
+	 *                               passing a key that would not fit reports a write
+	 *                               that would really be rejected. Nothing is persisted
+	 *                               here, so a bad value misreports rather than
+	 *                               corrupts. Default empty.
+	 *
+	 * @return true|WP_Error True if the write would be accepted, error object otherwise.
+	 */
+	public static function validate_item( $user_id, $key, $value, $pending_keys = [] ) {
+		$value = self::prepare_item_value( $value );
+		if ( \is_wp_error( $value ) ) {
+			return $value;
+		}
+
+		$user_keys = self::get_item_keys( $user_id );
+		if ( ! empty( $pending_keys ) ) {
+			$user_keys = array_values( array_unique( array_merge( $user_keys, $pending_keys ) ) );
+		}
+
+		return self::validate_prepared_item( $user_id, $key, $value, $user_keys );
+	}
+
+	/**
+	 * Update reader data item.
+	 *
+	 * @param string $user_id User ID.
+	 * @param string $key     Key.
+	 * @param string $value   Value.
+	 *
+	 * @return true|WP_Error True on success, error object on failure.
+	 */
+	public static function update_item( $user_id, $key, $value ) {
+		$value = self::prepare_item_value( $value );
+		if ( \is_wp_error( $value ) ) {
+			return $value;
+		}
+
+		$user_keys = self::get_item_keys( $user_id );
+
+		$is_valid = self::validate_prepared_item( $user_id, $key, $value, $user_keys );
+		if ( \is_wp_error( $is_valid ) ) {
+			return $is_valid;
+		}
+
+		if ( ! in_array( $key, $user_keys, true ) ) {
+			$user_keys[] = $key;
+			\update_user_meta( $user_id, 'newspack_reader_data_keys', $user_keys );
+		}
+
+		\update_user_meta( $user_id, self::get_meta_key_name( $key ), $value );
+
+		/**
+		 * Fires after a reader data item is updated.
+		 *
+		 * @param int    $user_id User ID.
+		 * @param string $key     Key.
+		 * @param string $value   Value.
+		 */
+		do_action( 'newspack_reader_data_updated', $user_id, $key, $value );
+		return true;
+	}
+
+	/**
+	 * Delete user data item.
+	 *
+	 * @param string $user_id User ID.
+	 * @param string $key     Key.
+	 */
+	private static function delete_item( $user_id, $key ) {
+		$user_keys = \get_user_meta( $user_id, 'newspack_reader_data_keys', true );
+		if ( ! $user_keys ) {
+			$user_keys = [];
+		}
+		if ( in_array( $key, $user_keys, true ) ) {
+			$user_keys = array_diff( $user_keys, [ $key ] );
+			\update_user_meta( $user_id, 'newspack_reader_data_keys', $user_keys );
+		}
+		\delete_user_meta( $user_id, self::get_meta_key_name( $key ) );
+
+		/**
+		 * Fires after a reader data item is deleted.
+		 *
+		 * @param int         $user_id User ID.
+		 * @param string      $key     Key.
+		 * @param string|null $value   Value. Null when the item is deleted.
+		 */
+		do_action( 'newspack_reader_data_updated', $user_id, $key, null );
+		return true;
+	}
+
+	/**
+	 * API callback to update an item.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public static function api_update_item( $request ) {
+		$key   = $request->get_param( 'key' );
+		$value = $request->get_param( 'value' );
+		if ( ! $key || ! $value ) {
+			return new \WP_Error( 'invalid_params', __( 'Invalid parameters.', 'newspack' ), [ 'status' => 400 ] );
+		}
+		if ( in_array( $key, self::get_read_only_keys(), true ) ) {
+			return new \WP_Error( 'read_only_key', __( 'This key is read-only.', 'newspack' ), [ 'status' => 403 ] );
+		}
+		// Value must be a valid stringified JSON.
+		if ( null === json_decode( $value ) ) {
+			return new \WP_Error( 'invalid_value', __( 'Invalid value.', 'newspack' ), [ 'status' => 400 ] );
+		}
+		$res = self::update_item( \get_current_user_id(), $key, $value );
+		if ( \is_wp_error( $res ) ) {
+			return $res;
+		}
+		return new \WP_REST_Response( [ 'success' => true ] );
+	}
+
+	/**
+	 * API callback to delete an item.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public static function api_delete_item( $request ) {
+		$key = $request->get_param( 'key' );
+		if ( ! $key ) {
+			return new \WP_Error( 'invalid_params', __( 'Invalid parameters.', 'newspack' ), [ 'status' => 400 ] );
+		}
+		if ( in_array( $key, self::get_read_only_keys(), true ) ) {
+			return new \WP_Error( 'read_only_key', __( 'This key is read-only.', 'newspack' ), [ 'status' => 403 ] );
+		}
+		self::delete_item( \get_current_user_id(), $key );
+		return new \WP_REST_Response( [ 'success' => true ] );
+	}
+
+	/**
+	 * Keep the reader's newsletter lists in step with the newsletter data events.
+	 *
+	 * `lists` (newsletter_subscribed) and `lists_added` (newsletter_updated)
+	 * both mean "now on these lists": subscribe() is additive at the ESP and
+	 * fires for contacts that already exist, so neither replaces the stored
+	 * set. The result is always re-indexed, because array_diff() keeps keys and
+	 * a keyed array encodes as a JSON object that get_newsletter_subscribed_lists()
+	 * does not accept as a list. A value an earlier removal left in that shape
+	 * (`{"1":"list-2"}`) still carries the IDs as its values, so it is decoded
+	 * as an array and repaired here rather than reset.
+	 *
+	 * A removal-only event for a reader with no known stored set records
+	 * nothing. "No longer on X" says nothing about the other lists, while a
+	 * stored empty list means "on no lists", which the Newsletter Selection
+	 * field publishes as a blank value over whatever the ESP holds. A reader on
+	 * a list at the ESP with nothing stored here (an account that predates the
+	 * item, or a subscription made at the ESP) reaches this path when they
+	 * leave that list. The selection stays unknown until a login or a subscribe
+	 * event establishes it.
+	 *
+	 * @param int   $timestamp Timestamp.
+	 * @param array $data      Data.
+	 */
+	public static function update_newsletter_subscribed_lists( $timestamp, $data ) {
+		if ( ! isset( $data['user_id'] ) ) {
+			return;
+		}
+		// Payload entries are held to the same shape as the stored value: a
+		// nested array would reach array_diff() and raise a notice.
+		$as_list = static fn( $lists ) => is_array( $lists ) ? array_filter( $lists, 'is_scalar' ) : [];
+		$added   = array_merge( $as_list( $data['lists'] ?? null ), $as_list( $data['lists_added'] ?? null ) );
+		$removed = $as_list( $data['lists_removed'] ?? null );
+		if ( empty( $added ) && empty( $removed ) ) {
+			return;
+		}
+		$stored = self::get_data( $data['user_id'], 'newsletter_subscribed_lists' );
+		$stored = is_string( $stored ) ? json_decode( $stored, true ) : $stored;
+		if ( empty( $added ) && ! is_array( $stored ) ) {
+			return;
+		}
+		$lists = array_values( array_unique( array_merge( array_diff( $as_list( $stored ), $removed ), $added ) ) );
+		self::update_item( $data['user_id'], 'is_newsletter_subscriber', ! empty( $lists ) );
+		self::update_item( $data['user_id'], 'newsletter_subscribed_lists', wp_json_encode( $lists ) );
+	}
+
+	/**
+	 * Set the user as a donor.
+	 *
+	 * @param int   $timestamp Timestamp.
+	 * @param array $data      Data.
+	 */
+	public static function set_is_donor( $timestamp, $data ) {
+		self::update_item( $data['user_id'], 'is_donor', true );
+		self::update_item( $data['user_id'], 'is_former_donor', false );
+	}
+
+	/**
+	 * Set the user as a former donor.
+	 *
+	 * @param int   $timestamp Timestamp.
+	 * @param array $data      Data.
+	 */
+	public static function set_is_former_donor( $timestamp, $data ) {
+		self::update_item( $data['user_id'], 'is_donor', false );
+		self::update_item( $data['user_id'], 'is_former_donor', true );
+	}
+
+	/**
+	 * Setup reader activity for push.
+	 */
+	public static function setup_reader_activity() {
+		self::$reader_activity = [];
+
+		/**
+		 * Article view activity.
+		 */
+		if ( is_singular( 'post' ) ) {
+			global $post;
+			$activity = [
+				'action' => 'article_view',
+				'data'   => [
+					'post_id'    => get_the_ID(),
+					'permalink'  => get_permalink(),
+					'categories' => wp_get_post_categories( get_the_ID(), [ 'fields' => 'ids' ] ),
+					'tags'       => wp_get_post_tags( get_the_ID(), [ 'fields' => 'ids' ] ),
+					'author'     => $post->post_author,
+				],
+			];
+
+			/**
+			 * Filters the 'article_view' reader activity.
+			 *
+			 * @param array $activity Activity.
+			 */
+			$activity = apply_filters( 'newspack_reader_activity_article_view', $activity );
+
+			// Allow the filter to short-circuit the activity.
+			if ( ! empty( $activity ) ) {
+				self::$reader_activity[] = $activity;
+			}
+		}
+
+		/**
+		 * Filter the reader activity to push to the client.
+		 *
+		 * @param array $reader_activity Reader activity.
+		 */
+		self::$reader_activity = apply_filters( 'newspack_reader_activity', self::$reader_activity );
+	}
+
+	/**
+	 * Data event handler to check if the user is subscribed to a newsletter and
+	 * set the data item.
+	 *
+	 * @param int   $timestamp Timestamp.
+	 * @param array $data      Data.
+	 */
+	public static function check_newsletter_subscription( $timestamp, $data ) {
+		if ( empty( $data['user_id'] ) || empty( $data['email'] ) ) {
+			return;
+		}
+		if ( ! class_exists( '\Newspack_Newsletters' ) || ! class_exists( '\Newspack_Newsletters_Subscription' ) ) {
+			return;
+		}
+		$subscribed_lists = \Newspack_Newsletters_Subscription::get_contact_lists( $data['email'] );
+		if ( is_wp_error( $subscribed_lists ) || ! is_array( $subscribed_lists ) ) {
+			return;
+		}
+		// The providers answer [] for a failed contact lookup as well as for a
+		// contact on no lists. Only trust an empty read when the contact itself
+		// is readable; otherwise a transient ESP error would store "unsubscribed
+		// from everything" and the next sync would push that to the ESP. The
+		// second lookup only happens for readers on no lists. A contact that
+		// does not exist is treated like one that could not be read, so a reader
+		// deleted at the ESP keeps their stored lists: the conservative side,
+		// since a blank pushed by mistake cannot be recovered. Known gap:
+		// ActiveCampaign fetches the lists in a second request and answers []
+		// when that one fails, which this check cannot tell from a real empty.
+		if ( empty( $subscribed_lists ) && is_wp_error( \Newspack_Newsletters_Subscription::get_contact_data( $data['email'] ) ) ) {
+			return;
+		}
+		self::update_item( $data['user_id'], 'is_newsletter_subscriber', ! empty( $subscribed_lists ) );
+		self::update_item( $data['user_id'], 'newsletter_subscribed_lists', wp_json_encode( $subscribed_lists ) );
+	}
+
+	/**
+	 * Data event handler to update a user's list of active non-donation subscriptions.
+	 * The active_subscriptions key stores an array of the user's active non-donation subscriptions.
+	 *
+	 * @param int   $timestamp Timestamp.
+	 * @param array $data      Data.
+	 */
+	public static function update_active_subscriptions( $timestamp, $data ) {
+		if ( empty( $data['user_id'] ) || empty( $data['subscription_id'] ) || empty( $data['product_ids'] ) || empty( $data['status_after'] ) ) {
+			return;
+		}
+
+		$active_subscriptions = self::decode_item_list( self::get_data( $data['user_id'], 'active_subscriptions' ) );
+		if ( WooCommerce_Connection::is_subscription_active( $data['status_after'] ) ) {
+			$active_subscriptions = array_merge( $active_subscriptions, $data['product_ids'] );
+		} else {
+			$active_subscriptions = array_values( array_diff( $active_subscriptions, $data['product_ids'] ) );
+		}
+
+		$active_subscriptions = array_values( array_unique( $active_subscriptions ) );
+		self::update_item( $data['user_id'], 'active_subscriptions', $active_subscriptions );
+	}
+
+	/**
+	 * Data event handler to check if the user has active subscriptions and
+	 * set the data item on login.
+	 *
+	 * @param int   $timestamp Timestamp.
+	 * @param array $data      Data.
+	 */
+	public static function check_product_subscriptions( $timestamp, $data ) {
+		if ( empty( $data['user_id'] ) || empty( $data['email'] ) ) {
+			return;
+		}
+
+		if ( ! function_exists( 'wcs_get_subscriptions' ) ) {
+			return;
+		}
+
+		$active_subscriptions = \wcs_get_subscriptions(
+			[
+				'customer_id'         => $data['user_id'],
+				'subscription_status' => WooCommerce_Connection::ACTIVE_SUBSCRIPTION_STATUSES,
+			]
+		);
+
+		if ( empty( $active_subscriptions ) ) {
+			return;
+		}
+
+		$subscription_products = [];
+		foreach ( $active_subscriptions as $subscription ) {
+			$subscription_products = array_merge( $subscription_products, \Newspack\WooCommerce_Connection::get_products_for_order( $subscription->get_id() ) );
+		}
+		$subscription_products = array_values( array_unique( $subscription_products ) );
+		self::update_item( $data['user_id'], 'active_subscriptions', $subscription_products );
+	}
+
+	/**
+	 * Data event handler to update a user's list of active memberships.
+	 *
+	 * @param int   $timestamp Timestamp.
+	 * @param array $data      Data.
+	 */
+	public static function update_active_memberships( $timestamp, $data ) {
+		if ( empty( $data['user_id'] ) || empty( $data['plan_id'] ) ) {
+			return;
+		}
+
+		$active_memberships = self::decode_item_list( self::get_data( $data['user_id'], 'active_memberships' ) );
+		if ( ! isset( $data['status_after'] ) || in_array( $data['status_after'], Memberships::$active_statuses, true ) ) {
+			$active_memberships[] = $data['plan_id'];
+		} else {
+			$active_memberships = array_values( array_diff( $active_memberships, [ $data['plan_id'] ] ) );
+		}
+
+		$active_memberships = array_values( array_unique( $active_memberships ) );
+		self::update_item( $data['user_id'], 'active_memberships', $active_memberships );
+	}
+
+	/**
+	 * Data event handler to check if the user has active memberships and
+	 * set the data item on login.
+	 *
+	 * @param int   $timestamp Timestamp.
+	 * @param array $data      Data.
+	 */
+	public static function check_memberships( $timestamp, $data ) {
+		if ( empty( $data['user_id'] ) || empty( $data['email'] ) ) {
+			return;
+		}
+
+		if ( ! class_exists( 'WC_Memberships' ) || ! function_exists( 'wc_memberships_get_user_memberships' ) ) {
+			return;
+		}
+
+		$active_memberships = \wc_memberships_get_user_memberships( $data['user_id'], Memberships::$active_statuses );
+		if ( empty( $active_memberships ) ) {
+			return;
+		}
+
+		$membership_plans = [];
+		foreach ( $active_memberships as $membership ) {
+			$membership_plans[] = $membership->get_plan_id();
+		}
+		$membership_plans = array_values( array_unique( $membership_plans ) );
+		self::update_item( $data['user_id'], 'active_memberships', $membership_plans );
+	}
+}
+Reader_Data::init();

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "npe/profile-bio",
+  "title": "Profile Bio",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./view.scss",
+  "category": "newspack-elections",
+  "example": {
+    "attributes": {
+      "fieldType": "text",
+      "fieldKey": "bio"
+    }
+  },
+  "supports": {
+    "anchor": true,
+    "align": true,
+    "align-wide": true,
+    "aria-label": true,
+    "color": {
+      "background": true,
+      "enableContrastChecker": true,
+      "gradients": true,
+      "link": true,
+      "text": true
+    },
+    "shadow": true,
+    "spacing": {
+      "margin": true,
+      "padding": true,
+      "blockGap": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "textAlign": true
+    }
+  },
+  "attributes": {
+    "fieldKey": {
+      "type": "string",
+      "default": "bio"
+    },
+    "fieldType": {
+      "type": "string",
+      "default": "text"
+    },
+    "showMoreOnNewLine": {
+      "type": "boolean",
+      "default": true
+    },
+    "bioLength": {
+      "type": "number",
+      "default": 55
+    },
+    "moreText": {
+      "type": "string"
+    }
+  },
+  "ancestor": [
+    "npe/profile"
+  ],
+  "usesContext": [
+    "npe/fieldKey",
+    "npe/fieldType",
+    "npe/showLabels",
+    "postType",
+    "queryId",
+    "postId",
+    "npe/postId"
+  ]
+}

@@ -1,0 +1,32 @@
+/* Newspack Local ESPs Admin Styles */
+.newspack-esp-card {
+    transition: all 0.2s ease !important;
+}
+.newspack-esp-card:hover {
+    border-color: #0073aa !important;
+    box-shadow: 0 2px 8px rgba(0,115,170,0.15);
+}
+.newspack-esp-card input[type="radio"] {
+    float: right;
+}
+.newspack-esp-card svg {
+    height: 24px;
+    width: auto;
+}
+.newspack-esp-settings-panel h3 svg {
+    height: 20px;
+    width: auto;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+.newspack-local-esp-settings .form-table th {
+    width: 150px;
+}
+.newspack-local-esp-test {
+    margin-top: 10px;
+}
+.newspack-local-esp-test-result {
+    margin-left: 10px;
+    font-weight: bold;
+}
+

@@ -1,0 +1,1 @@
+<?php /* Shipping address removed in NewsWoo */ ?>

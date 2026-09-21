@@ -1,0 +1,110 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "npe/profile-read-more",
+  "title": "Profile Read More",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./index.css",
+  "category": "newspack-elections",
+  "example": {
+    "attributes": {
+      "fieldType": "block",
+      "fieldKey": "permalink"
+    }
+  },
+  "supports": {
+    "anchor": true,
+    "align-wide": true,
+    "aria-label": true,
+    "align": [
+      "wide",
+      "full"
+    ],
+    "html": false,
+    "color": {
+      "gradients": true,
+      "link": true,
+      "__experimentalDefaultControls": {
+        "background": true,
+        "text": true,
+        "link": true
+      }
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "__experimentalFontFamily": true,
+      "__experimentalFontWeight": true,
+      "__experimentalFontStyle": true,
+      "__experimentalTextTransform": true,
+      "__experimentalTextDecoration": true,
+      "__experimentalLetterSpacing": true,
+      "__experimentalDefaultControls": {
+        "fontSize": true
+      }
+    },
+    "interactivity": {
+      "clientNavigation": true
+    },
+    "__experimentalBorder": {
+      "radius": true,
+      "color": true,
+      "width": true,
+      "style": true,
+      "__experimentalDefaultControls": {
+        "radius": true,
+        "color": true,
+        "width": true,
+        "style": true
+      }
+    }
+  },
+  "attributes": {
+    "fieldKey": {
+      "type": "string",
+      "default": "permalink"
+    },
+    "fieldType": {
+      "type": "string",
+      "default": "block"
+    },
+    "rel": {
+      "type": "string",
+      "attribute": "rel",
+      "default": "",
+      "role": "content"
+    },
+    "linkTarget": {
+      "type": "string",
+      "default": "_self",
+      "role": "content"
+    },
+    "linkText": {
+      "type": "string",
+      "role": "content"
+    },
+    "prefixWithName": {
+      "type": "boolean",
+      "default": false
+    },
+    "suffixWithName": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "ancestor": [
+    "npe/profile"
+  ],
+  "usesContext": [
+    "queryId",
+    "postId",
+    "postType",
+    "npe/profileId",
+    "npe/postId"
+  ]
+}

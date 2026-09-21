@@ -1,0 +1,509 @@
+<?php
+/**
+ * REST API class for Newspack Group Subscriptions.
+ *
+ * @package Newspack
+ */
+
+namespace Newspack;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Settings class.
+ */
+class Group_Subscription_API {
+	const NAMESPACE = 'newspack-group-subscription/v1';
+	/**
+	 * Initialize hooks.
+	 */
+	public static function init() {
+		\add_action( 'rest_api_init', [ __CLASS__, 'register_routes' ] );
+	}
+
+	/**
+	 * Register REST API routes.
+	 */
+	public static function register_routes() {
+		// The group management REST routes back the reader-facing My Account UX
+		// and the admin meta box, both gated behind the Access Control feature
+		// flag. Don't register the routes on un-migrated sites.
+		if ( ! Content_Gate::is_newspack_feature_enabled() ) {
+			return;
+		}
+		\register_rest_route(
+			self::NAMESPACE,
+			'/search-users',
+			[
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => [ __CLASS__, 'api_search_users' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission_callback' ],
+				'args'                => [
+					'search'          => [
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'subscription_id' => [
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
+				],
+			]
+		);
+		\register_rest_route(
+			self::NAMESPACE,
+			'/members',
+			[
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => [ __CLASS__, 'api_update_members' ],
+				'permission_callback' => [ __CLASS__, 'permission_callback' ],
+				'args'                => [
+					'subscription_id'   => [
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
+					'members_to_add'    => [
+						'type'     => 'array',
+						'items'    => [
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+						],
+						'required' => false,
+					],
+					'members_to_remove' => [
+						'type'     => 'array',
+						'items'    => [
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+						],
+						'required' => false,
+					],
+				],
+			]
+		);
+		\register_rest_route(
+			self::NAMESPACE,
+			'/name',
+			[
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => [ __CLASS__, 'api_update_name' ],
+				'permission_callback' => [ __CLASS__, 'permission_callback' ],
+				'args'                => [
+					'subscription_id' => [
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
+					'name'            => [
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+				],
+			]
+		);
+		\register_rest_route(
+			self::NAMESPACE,
+			'/invite',
+			[
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => [ __CLASS__, 'api_invite' ],
+				'permission_callback' => [ __CLASS__, 'permission_callback' ],
+				'args'                => [
+					'subscription_id' => [
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
+					'email'           => [
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_email',
+					],
+				],
+			]
+		);
+		\register_rest_route(
+			self::NAMESPACE,
+			'/invite',
+			[
+				'methods'             => \WP_REST_Server::DELETABLE,
+				'callback'            => [ __CLASS__, 'api_cancel_invite' ],
+				'permission_callback' => [ __CLASS__, 'permission_callback' ],
+				'args'                => [
+					'subscription_id' => [
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
+					'email'           => [
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_email',
+					],
+				],
+			]
+		);
+		\register_rest_route(
+			self::NAMESPACE,
+			'/invite-link',
+			[
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => [ __CLASS__, 'api_generate_invite_link' ],
+				'permission_callback' => [ __CLASS__, 'permission_callback' ],
+				'args'                => [
+					'subscription_id' => [
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
+				],
+			]
+		);
+		\register_rest_route(
+			self::NAMESPACE,
+			'/invite-link',
+			[
+				'methods'             => \WP_REST_Server::DELETABLE,
+				'callback'            => [ __CLASS__, 'api_delete_invite_link' ],
+				'permission_callback' => [ __CLASS__, 'permission_callback' ],
+				'args'                => [
+					'subscription_id' => [
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Permission callback for managing group subscriptions.
+	 *
+	 * Shared by every route in the namespace apart from the member search, which
+	 * answers about the site's user records instead and uses
+	 * {@see self::admin_permission_callback()}.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 * @return bool Whether the caller may manage the subscription named in the request.
+	 */
+	public static function permission_callback( $request ) {
+		// Neither branch below can legitimately pass for an anonymous caller, so this
+		// turns away nothing that works today. It is the boundary at which a regression
+		// in either branch would otherwise become an unauthenticated grant.
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+		$subscription_id = $request->get_param( 'subscription_id' );
+		$subscription    = WooCommerce_Subscriptions::sanitize_subscription( $subscription_id );
+		if ( ! $subscription ) {
+			return false;
+		}
+		return current_user_can( 'manage_woocommerce' ) || Group_Subscription::user_is_manager( get_current_user_id(), $subscription );
+	}
+
+	/**
+	 * Permission callback for routes that answer about the site's user records rather
+	 * than about the subscription named in the request.
+	 *
+	 * Managing a group authorizes the caller for that subscription, which is not the
+	 * same object. Store staff are the only callers with a UI for these routes: the
+	 * subscription admin metabox calls them, while the reader-facing My Account bundle
+	 * uses /invite-link and /name.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 * @return bool Whether the caller may search the site's readers.
+	 */
+	public static function admin_permission_callback( $request ) {
+		return current_user_can( 'manage_woocommerce' ) && self::permission_callback( $request );
+	}
+
+	/**
+	 * User search for group subscription.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response The response object.
+	 */
+	public static function api_search_users( $request ) {
+		if ( ! function_exists( 'wcs_get_subscription' ) ) {
+			return \rest_ensure_response( new \WP_Error( 'newspack_group_subscription_api', __( 'WooCommerce Subscriptions is not available.', 'newspack-plugin' ) ) );
+		}
+		$search          = $request->get_param( 'search' );
+		$subscription_id = $request->get_param( 'subscription_id' );
+		$subscription    = wcs_get_subscription( $subscription_id );
+		if ( ! $subscription ) {
+			return \rest_ensure_response( new \WP_Error( 'newspack_group_subscription_api_search_users', __( 'Subscription not found.', 'newspack-plugin' ) ) );
+		}
+		// The candidate query is intentionally NOT role-restricted. Group_Subscription::is_eligible_member()
+		// -- which runs the newspack_group_subscription_member_eligible filter -- is the sole authority on
+		// who is an eligible group member, so a publisher can opt a custom-role user in (or a normally
+		// eligible role-holder out) via that filter. A role__in allowlist here would silently exclude an
+		// opted-in user (and could never exclude an opted-out one) before the predicate ever runs, so
+		// results are post-filtered against is_eligible_member() below instead.
+		$exclude   = Group_Subscription::get_members( $subscription );
+		$exclude[] = $subscription->get_user_id();
+		// Each query is capped at 50 candidates ('number' below); results are then post-filtered
+		// through is_eligible_member() below, so a response may hold fewer than the cap. A
+		// publisher can raise the cap via the newspack_group_subscription_user_query_args filter.
+		// The cap applies before that post-filter, so on a large site a search term whose first 50
+		// matches are all ineligible (e.g. staff) returns an empty list even though eligible matches
+		// exist further down; raise the cap via the filter above if that bites.
+		$query1 = get_users(
+			/**
+			 * Filter the user query args for searching for group subscription users.
+			 *
+			 * @param array $query_args Query args.
+			 * @param string $query_type Query type: main_query or meta_query.
+			 */
+			apply_filters(
+				'newspack_group_subscription_user_query_args',
+				[
+					'number'         => 50,
+					'fields'         => [ 'ID', 'user_email' ],
+					'exclude'        => $exclude,
+					'search'         => "*$search*",
+					'search_columns' => [ 'ID', 'user_login', 'user_url', 'user_email', 'user_nicename', 'display_name' ],
+				],
+				'main_query'
+			)
+		);
+		$exclude = array_values( array_unique( array_merge( $exclude, array_column( $query1, 'ID' ) ) ) );
+		$query2  = \get_users(
+			/**
+			 * Filter the user query args for searching for group subscription users.
+			 *
+			 * @param array $query_args Query args.
+			 * @param string $query_type Query type: main_query or meta_query.
+			 */
+			\apply_filters(
+				'newspack_group_subscription_user_query_args',
+				[
+					'number'     => 50,
+					'fields'     => [ 'ID', 'user_email' ],
+					'exclude'    => $exclude,
+					'meta_query' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+						'relation' => 'OR',
+						[
+							'key'     => 'first_name',
+							'value'   => $search,
+							'compare' => 'LIKE',
+						],
+						[
+							'key'     => 'last_name',
+							'value'   => $search,
+							'compare' => 'LIKE',
+						],
+					],
+				],
+				'meta_query'
+			)
+		);
+		$merged = array_merge( $query1, $query2 );
+		if ( ! empty( $merged ) ) {
+			// Prime the user and user-meta caches once, up front, so the per-candidate
+			// is_eligible_member() predicate below (get_user_by() + meta reads + user_can())
+			// hits cache instead of issuing two more queries per candidate.
+			\cache_users( array_map( 'intval', \wp_list_pluck( $merged, 'ID' ) ) );
+		}
+		$users = array_map(
+			function( $user ) {
+				return [
+					'id'   => $user->ID,
+					'text' => $user->user_email . ' (#' . $user->ID . ')',
+				];
+			},
+			array_filter(
+				$merged,
+				function( $user ) {
+					return Group_Subscription::is_eligible_member( (int) $user->ID );
+				}
+			)
+		);
+
+		// Sort by ID.
+		usort(
+			$users,
+			function( $a, $b ) {
+				return $a['id'] <=> $b['id'];
+			}
+		);
+		return \rest_ensure_response( $users );
+	}
+
+	/**
+	 * Update members for a group subscription.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response The response object.
+	 */
+	public static function api_update_members( $request ) {
+		$subscription_id = $request->get_param( 'subscription_id' );
+		// Match the admin-post handlers: terminal-state subscriptions don't accept member changes.
+		// 409 Conflict (not 403) so every "can't write in this state" rejection across this
+		// endpoint shares one status with update_members()'s member-limit response.
+		if ( ! Group_Subscription_MyAccount::is_subscription_manageable( $subscription_id ) ) {
+			return \rest_ensure_response(
+				new \WP_Error(
+					'newspack_group_subscription_not_manageable',
+					sprintf(
+						/* translators: %s: lowercase singular group label (e.g. "group", "team"). */
+						__( 'This %s is no longer active, so its members can\'t be changed.', 'newspack-plugin' ),
+						Group_Subscription::get_label_lower( 'singular' )
+					),
+					[ 'status' => 409 ]
+				)
+			);
+		}
+		$members_to_add    = $request->get_param( 'members_to_add' );
+		$members_to_remove = $request->get_param( 'members_to_remove' );
+		// The shared permission_callback only proves the actor may manage the group;
+		// it doesn't stop a manager from removing a peer manager. Enforce the
+		// per-target peer-manager rule here, matching the My Account handler, so a
+		// forged request can't do what the UI won't offer.
+		foreach ( (array) $members_to_remove as $member_to_remove ) {
+			if ( ! Group_Subscription::can_actor_remove_member( get_current_user_id(), $member_to_remove, $subscription_id ) ) {
+				return \rest_ensure_response(
+					new \WP_Error(
+						'newspack_group_subscription_remove_not_allowed',
+						sprintf(
+							/* translators: %s: lowercase singular group label (e.g. "group", "team"). */
+							__( 'You do not have permission to remove this member from the %s.', 'newspack-plugin' ),
+							Group_Subscription::get_label_lower( 'singular' )
+						),
+						[ 'status' => 403 ]
+					)
+				);
+			}
+		}
+		$results = Group_Subscription::update_members( $subscription_id, $members_to_add ?? [], $members_to_remove ?? [] );
+		return \rest_ensure_response( $results );
+	}
+
+	/**
+	 * Rename a group subscription.
+	 *
+	 * Renaming is metadata-only, so unlike member/invite changes it is NOT gated on the
+	 * subscription's state: an owner can still rename a cancelled or expired group to tell
+	 * their groups apart in the picker. An empty name clears the override, so the group
+	 * name falls back to the product name and then the default group label.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response The response object, carrying the resolved group name.
+	 */
+	public static function api_update_name( $request ) {
+		$subscription_id = $request->get_param( 'subscription_id' );
+		$subscription    = WooCommerce_Subscriptions::sanitize_subscription( $subscription_id );
+		if ( ! $subscription ) {
+			return \rest_ensure_response(
+				new \WP_Error(
+					'newspack_group_subscription_not_found',
+					__( 'Subscription not found.', 'newspack-plugin' ),
+					[ 'status' => 404 ]
+				)
+			);
+		}
+		// Cap the length to match the input's maxlength, so a client bypassing the field can't
+		// store an oversized name that breaks the header/picker layout. mb_substr() needs no
+		// mbstring guard: WP core polyfills it in wp-includes/compat.php. Unlike mb_strtolower(),
+		// which core does not polyfill, hence the guard in Group_Subscription::get_label_lower().
+		$name = mb_substr( trim( (string) $request->get_param( 'name' ) ), 0, Group_Subscription_Settings::GROUP_NAME_MAX_LENGTH );
+		Group_Subscription_Settings::update_subscription_name( $subscription, $name );
+		// Return the resolved name so the client can reflect the fallback when the name was cleared.
+		$settings = Group_Subscription_Settings::get_subscription_settings( $subscription );
+		return \rest_ensure_response( [ 'name' => $settings['name'] ] );
+	}
+
+	/**
+	 * Invite a user to a group subscription.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response The response object.
+	 */
+	public static function api_invite( $request ) {
+		$subscription_id = $request->get_param( 'subscription_id' );
+		// Email invitations are new invitations, so gate on active state for parity with
+		// api_generate_invite_link() and the admin-post handler (verify_active).
+		// 409 Conflict: a state-based rejection, matching the other member/invite gates.
+		if ( ! Group_Subscription_MyAccount::is_subscription_active( $subscription_id ) ) {
+			return \rest_ensure_response(
+				new \WP_Error(
+					'newspack_group_subscription_not_active',
+					sprintf(
+						/* translators: %s: lowercase singular group label (e.g. "group", "team"). */
+						__( 'This %s is not active, so new invitations can\'t be issued.', 'newspack-plugin' ),
+						Group_Subscription::get_label_lower( 'singular' )
+					),
+					[ 'status' => 409 ]
+				)
+			);
+		}
+		$email  = $request->get_param( 'email' );
+		$invite = Group_Subscription_Invite::generate_invite( $subscription_id, $email );
+		return \rest_ensure_response( $invite );
+	}
+
+	/**
+	 * Cancel an invite for a group subscription.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response The response object.
+	 */
+	public static function api_cancel_invite( $request ) {
+		$subscription_id = $request->get_param( 'subscription_id' );
+		$email           = $request->get_param( 'email' );
+		$result = Group_Subscription_Invite::cancel_invite( $subscription_id, $email );
+		return \rest_ensure_response( $result );
+	}
+
+	/**
+	 * Generate an invite-link for a group subscription.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response The response object.
+	 */
+	public static function api_generate_invite_link( $request ) {
+		$subscription_id = $request->get_param( 'subscription_id' );
+		// Only active subscriptions can mint new invitations; otherwise a stale token could be
+		// left behind on an inactive sub for later reactivation. Deletion stays allowed for cleanup.
+		// 409 Conflict: a state-based rejection, matching the other member/invite gates.
+		if ( ! Group_Subscription_MyAccount::is_subscription_active( $subscription_id ) ) {
+			return \rest_ensure_response(
+				new \WP_Error(
+					'newspack_group_subscription_not_active',
+					sprintf(
+						/* translators: %s: lowercase singular group label (e.g. "group", "team"). */
+						__( 'This %s is not active, so new invitations can\'t be issued.', 'newspack-plugin' ),
+						Group_Subscription::get_label_lower( 'singular' )
+					),
+					[ 'status' => 409 ]
+				)
+			);
+		}
+		$result = Group_Subscription_Invite::generate_link_invite( $subscription_id, get_current_user_id() );
+		return \rest_ensure_response( $result );
+	}
+
+	/**
+	 * Delete an invite-link for a group subscription.
+	 *
+	 * @param \WP_REST_Request $request The request object.
+	 *
+	 * @return \WP_REST_Response The response object.
+	 */
+	public static function api_delete_invite_link( $request ) {
+		$subscription_id = $request->get_param( 'subscription_id' );
+		$result = Group_Subscription_Invite::delete_link_invite( $subscription_id, get_current_user_id() );
+		return \rest_ensure_response( $result );
+	}
+}
+Group_Subscription_API::init();

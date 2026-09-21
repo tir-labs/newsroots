@@ -1,0 +1,37 @@
+name: Sync Newspack
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [sync-newspack]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: tir-labs/Newspack
+          path: .newspack-src
+      - name: Copy Newspack into newspack-bedrock
+        run: |
+          rsync -a \
+            --exclude='.git' \
+            --exclude='vendor/' \
+            --exclude='web/wp/' \
+            --exclude='web/app/plugins/' \
+            --exclude='web/app/mu-plugins/bedrock-disallow-indexing/' \
+            --exclude='web/app/themes/twentytwentyfive/' \
+            --exclude='web/app/uploads/' \
+            --exclude='.phpunit.cache/' \
+            --exclude='*.zip' \
+            .newspack-src/ newspack-bedrock/
+          rm -rf .newspack-src
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "sync(newspack-bedrock): pull from tir-labs/Newspack"
+          file_pattern: newspack-bedrock
+

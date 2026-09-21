@@ -1,0 +1,185 @@
+{
+	"name": "govpack/profile",
+    "editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": ["npe-blocks-shared-styles", "file:./view.css"],
+	"category": "newspack-elections",
+	"attributes": {
+		"className": {
+			"type": "string",
+			"default": ""
+		},
+		"profileId": {
+			"type": "number",
+			"default": 0
+		},
+		
+		"showAvatar": {
+			"type": "boolean",
+			"default": true
+		},
+		"avatarAlignment": {
+			"type": "string",
+			"default": "center"
+		},
+		"avatarBorderRadius": {
+			"type": "string",
+			"default": "0%"
+		},
+		"showOtherLinks" : {
+			"type": "boolean",
+			"default": false
+		},
+		"avatarSize": {
+			"type": "number",
+			"default": 128
+		},
+		"showName": {
+			"type": "boolean",
+			"default": true
+		},
+		"showStatus": {
+			"type": "boolean",
+			"default": true
+		},
+		"showStatusTag": {
+			"type": "boolean",
+			"default": false
+		},
+		"showWebsites": {
+			"type": "boolean",
+			"default": true
+		},
+		"avatarHideDefault": {
+			"type": "boolean",
+			"default": false
+		},
+        "showBio": {
+			"type": "boolean",
+			"default": true
+		},   
+		"showLabels": {
+			"type": "boolean",
+			"default": false
+		},
+		"labelsAbove": {
+			"type": "boolean",
+			"default": false
+		},
+        "showAge": {
+			"type": "boolean",
+			"default": false
+		},
+        "showLegislativeBody": {
+			"type": "boolean",
+			"default": true
+		},
+        "showPosition": {
+			"type": "boolean",
+			"default": true
+		},
+        "showParty": {
+			"type": "boolean",
+			"default": true
+		},
+        "showState": {
+			"type": "boolean",
+			"default": true
+		},
+    
+        "showSocial": {
+			"type": "boolean",
+			"default": true
+		},
+
+		"showDistrict": {
+			"type": "boolean",
+			"default": false
+		},
+
+		"selectedSocial": {
+			"type": "object",
+			"default": {
+				"showOfficial" : true,
+				"showCampaign" : true,
+				"showPersonal" : true
+			}
+		},
+        "showEmail": {
+			"type": "boolean",
+			"default": true
+		},
+      
+        "align": {
+			"type": "string",
+            "default": "left"
+		},
+		"width": {
+			"type": "string",
+            "default": "small"
+		},
+		"showCapitolCommunicationDetails": {
+			"type": "boolean",
+			"default": true
+		},
+		"selectedCapitolCommunicationDetails": {
+			"type": "object",
+			"default": {
+				"showPhone" : true,
+				"showFax" : true,
+				"showEmail" : true,
+				"showAddress" : true,
+				"showWebsite" : true
+			}
+		},
+		"showDistrictCommunicationDetails": {
+			"type": "boolean",
+			"default": true
+		},
+		"selectedDistrictCommunicationDetails": {
+			"type": "object",
+			"default": {
+				"showPhone" : true,
+				"showFax" : true,
+				"showEmail" : true,
+				"showAddress" : true,
+				"showWebsite" : true
+			}
+		},
+		"showCampaignCommunicationDetails": {
+			"type": "boolean",
+			"default": true
+		},
+		"selectedCampaignCommunicationDetails": {
+			"type": "object",
+			"default": {
+				"showPhone" : true,
+				"showFax" : true,
+				"showEmail" : true,
+				"showAddress" : true,
+				"showWebsite" : true
+			}
+		},
+		"showOtherCommunicationDetails": {
+			"type": "boolean",
+			"default": true
+		},
+		"selectedOtherCommunicationDetails": {
+			"type": "object",
+			"default": {}
+		},
+		"showProfileLink" : {
+			"type": "boolean",
+			"default": true
+		},
+		"showEndorsements" : {
+			"type": "boolean",
+			"default": true
+		},
+		"selectedLinks": {
+			"type": "object",
+			"default": {
+			}
+		}
+	}
+}

@@ -1,0 +1,48 @@
+.pda-star {
+    color: #fde16d;
+    -webkit-text-stroke: 1px orange;
+    width: auto;
+}
+.pda-star:before {
+    content: '\f155\f155\f155\f155\f155';
+}
+
+#pda_right_column_metaboxes .main_container {
+    background-color: white;
+    padding: 0 20px 20px 20px;
+    margin-bottom: 20px;
+    border: 1px solid #CCC;
+    border-radius: 0 0 10px 10px;
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#d9dee0',GradientType=0 );
+}
+
+.pda-affiliate-program-page {
+    margin-top: 45px;
+    display: inline-block;
+}
+
+/* Get lucky button */
+.pda_subscribe_error span {
+    color: #ca4a1f;
+}
+
+#pda_gold_signup_newsletter_input {
+    width: 100%;
+}
+
+#pda_signup_newsletter_error {
+    margin: 2px;
+}
+
+@media only screen and (min-width: 1200px) {
+    #pda_right_column_metaboxes {
+        width:25%;
+        float:left;
+        margin-top:98px;
+    }
+}
+@media only screen and (max-width: 1200px) {
+    #pda_right_column_metaboxes .main_container {
+        margin-right:20px;
+    }
+}

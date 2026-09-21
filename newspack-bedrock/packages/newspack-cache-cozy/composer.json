@@ -1,0 +1,21 @@
+{
+  "name": "automattic/newspack-cache-cozy",
+  "description": "newspack-cache-cozy",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "version": "0.6.2",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "newspack",
+    "bedrock"
+  ],
+  "homepage": "https://github.com/Postdated/Newspack",
+  "require": {
+    "php": ">=8.3",
+    "composer/installers": "^2.0"
+  },
+  "extra": {
+    "installer-name": "newspack-cache-cozy"
+  }
+}

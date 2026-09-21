@@ -1,0 +1,1614 @@
+# Copyright (C) 2026 Automattic
+# This file is distributed under the GPL3.
+msgid ""
+msgstr ""
+"Project-Id-Version: Newspack Rolling Coverage 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/newspack-rolling-coverage\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-09-17T19:01:41+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: newspack-rolling-coverage\n"
+
+#. Plugin Name of the plugin
+#: newspack-rolling-coverage.php
+msgid "Newspack Rolling Coverage"
+msgstr ""
+
+#. Description of the plugin
+#: newspack-rolling-coverage.php
+msgid "Live blog and rolling coverage of ongoing news events."
+msgstr ""
+
+#. Author of the plugin
+#: newspack-rolling-coverage.php
+msgid "Automattic"
+msgstr ""
+
+#. Author URI of the plugin
+#: newspack-rolling-coverage.php
+msgid "https://newspack.com/"
+msgstr ""
+
+#: includes/ai/class-abilities.php:60
+#: includes/class-admin.php:49
+#: includes/class-admin.php:50
+#: includes/class-taxonomy.php:92
+#: includes/class-taxonomy.php:93
+#: dist/admin.js:1
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Rolling Coverage"
+msgstr ""
+
+#: includes/ai/class-abilities.php:61
+msgid "Abilities for managing and generating content from rolling coverage entries."
+msgstr ""
+
+#: includes/ai/class-abilities.php:75
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Generate Key Takeaways"
+msgstr ""
+
+#: includes/ai/class-abilities.php:76
+msgid "Generates key takeaways from published entries in a rolling coverage using AI. Pass a coverage_id to specify which coverage to summarize, and optionally max_takeaways (1-10) to control the number of takeaways generated."
+msgstr ""
+
+#: includes/ai/class-abilities.php:83
+msgid "The ID of the coverage term to generate takeaways from."
+msgstr ""
+
+#: includes/ai/class-abilities.php:88
+msgid "Maximum number of takeaways to generate."
+msgstr ""
+
+#: includes/ai/class-abilities.php:102
+msgid "The generated key takeaways text."
+msgstr ""
+
+#: includes/ai/class-abilities.php:136
+msgid "A coverage_id is required."
+msgstr ""
+
+#: includes/ai/class-ai-service.php:134
+msgid "AI features are not available on this site."
+msgstr ""
+
+#. translators: %s: JSON decode error message.
+#: includes/ai/class-ai-service.php:212
+#, php-format
+msgid "Failed to decode AI response as JSON: %s"
+msgstr ""
+
+#: includes/ai/class-ai-service.php:237
+#: includes/blocks/class-rolling-coverage-block.php:1019
+#: includes/blocks/class-rolling-coverage-block.php:1107
+#: includes/blocks/class-rolling-coverage-block.php:1118
+#: includes/class-post-type.php:777
+#: includes/class-taxonomy.php:315
+msgid "Coverage not found."
+msgstr ""
+
+#: includes/ai/class-ai-service.php:257
+msgid "AI prompts are not configured. Configure them in the AI settings page."
+msgstr ""
+
+#: includes/ai/class-ai-service.php:298
+msgid "No published entries found for this coverage."
+msgstr ""
+
+#: includes/ai/class-ai-service.php:311
+msgid "(No title)"
+msgstr ""
+
+#: includes/blocks/class-breakout-post-link-block.php:63
+#: dist/admin.js:194
+#: dist/blocks/breakout-post-link/index.js:1
+msgid "Read more"
+msgstr ""
+
+#: includes/blocks/class-coverage-archived-notice-block.php:64
+#: dist/blocks/coverage-archived-notice/index.js:1
+msgid "Coverage of this news event has concluded and this feed is now archived."
+msgstr ""
+
+#: includes/blocks/class-coverage-follow-block.php:96
+#: dist/blocks/coverage-follow/index.js:1
+msgid "Follow"
+msgstr ""
+
+#: includes/blocks/class-coverage-follow-block.php:97
+msgid "Following"
+msgstr ""
+
+#: includes/blocks/class-coverage-follow-block.php:98
+msgid "Notifications are blocked in your browser. Allow them in your browser's site settings, then try again."
+msgstr ""
+
+#: includes/blocks/class-coverage-follow-block.php:99
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#. translators: 1: deep-linked entry title.
+#: includes/blocks/class-deep-link-cta-block.php:81
+#, php-format
+msgid "You linked to an older entry (%1$s)."
+msgstr ""
+
+#: includes/blocks/class-deep-link-cta-block.php:87
+#: dist/blocks/deep-link-cta/index.js:1
+msgid "View"
+msgstr ""
+
+#: includes/blocks/class-rolling-coverage-block.php:302
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Select a coverage to display its entries."
+msgstr ""
+
+#: includes/blocks/class-rolling-coverage-block.php:319
+msgid "This coverage is no longer available."
+msgstr ""
+
+#: includes/blocks/class-rolling-coverage-block.php:371
+msgid "No entries yet."
+msgstr ""
+
+#: includes/blocks/class-rolling-coverage-block.php:840
+msgid "This entry is now out of date compared to newer entries, but is preserved as it originally appeared."
+msgstr ""
+
+#: includes/blocks/class-rolling-coverage-block.php:1126
+msgid "Either cursor or before must be provided."
+msgstr ""
+
+#: includes/blocks/class-share-block.php:67
+#: dist/blocks/share/index.js:1
+#: dist/blocks/share/view.js:1
+msgid "Share"
+msgstr ""
+
+#: includes/blocks/class-share-block.php:75
+#: dist/blocks/share/index.js:1
+#: dist/blocks/share/view.js:1
+msgid "Share this entry"
+msgstr ""
+
+#: includes/class-admin.php:60
+#: includes/class-admin.php:61
+msgid "All Rolling Coverages"
+msgstr ""
+
+#: includes/class-admin.php:69
+#: includes/class-admin.php:70
+#: dist/admin.js:192
+msgid "Slack Connection"
+msgstr ""
+
+#: includes/class-admin.php:78
+#: includes/class-admin.php:79
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "AI"
+msgstr ""
+
+#: includes/class-admin.php:244
+#: dist/admin.js:194
+msgid "Slack"
+msgstr ""
+
+#: includes/class-ads.php:57
+msgid "Rolling Coverage: Entry"
+msgstr ""
+
+#: includes/class-ads.php:58
+msgid "Appears at the configured interval in the rolling coverage feed."
+msgstr ""
+
+#: includes/class-archive-mode.php:151
+msgid "This entry cannot be assigned to an archived coverage."
+msgstr ""
+
+#: includes/class-archive-mode.php:246
+#: includes/class-breakout.php:199
+#: includes/class-post-type.php:749
+#: includes/class-post-type.php:2037
+msgid "Entry not found."
+msgstr ""
+
+#: includes/class-archive-mode.php:258
+msgid "This entry's coverage is archived; unarchive the coverage first."
+msgstr ""
+
+#: includes/class-archive-mode.php:274
+msgid "Only published entries can be archived."
+msgstr ""
+
+#: includes/class-archive-mode.php:291
+msgid "Failed to update entry."
+msgstr ""
+
+#: includes/class-breakout.php:207
+msgid "This entry already has a breakout post."
+msgstr ""
+
+#: includes/class-post-type.php:135
+#: dist/admin.js:194
+msgid "Entries"
+msgstr ""
+
+#: includes/class-post-type.php:136
+msgid "Entry"
+msgstr ""
+
+#: includes/class-post-type.php:137
+msgid "Add Entry"
+msgstr ""
+
+#: includes/class-post-type.php:138
+msgid "Edit Entry"
+msgstr ""
+
+#: includes/class-post-type.php:139
+#: dist/admin.js:198
+msgid "New Entry"
+msgstr ""
+
+#: includes/class-post-type.php:140
+msgid "View Entry"
+msgstr ""
+
+#: includes/class-post-type.php:141
+msgid "Search Entries"
+msgstr ""
+
+#: includes/class-post-type.php:142
+msgid "No entries found."
+msgstr ""
+
+#: includes/class-post-type.php:143
+msgid "All Entries"
+msgstr ""
+
+#: includes/class-post-type.php:145
+msgid "Individual entries within a Rolling Coverage."
+msgstr ""
+
+#: includes/class-post-type.php:1954
+msgid "No entry IDs provided."
+msgstr ""
+
+#: includes/class-post-type.php:1970
+msgid "You do not have permission to restore this entry."
+msgstr ""
+
+#: includes/class-post-type.php:2045
+msgid "Entry is not in trash."
+msgstr ""
+
+#: includes/class-post-type.php:2100
+msgid "This entry has no coverage context to restore to."
+msgstr ""
+
+#: includes/class-post-type.php:2158
+msgid "Failed to restore entry."
+msgstr ""
+
+#: includes/class-push-notifications.php:78
+#: dist/blocks/coverage-follow/index.js:1
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Push Notifications"
+msgstr ""
+
+#: includes/class-push-notifications.php:98
+msgid "This entry's coverage doesn't have a canonical URL set yet. Set one in the coverage's settings, or no notification will be sent."
+msgstr ""
+
+#: includes/class-push-notifications.php:110
+msgid "Notify subscribers when this entry publishes"
+msgstr ""
+
+#: includes/class-taxonomy.php:440
+msgid "Coverage is not in trash."
+msgstr ""
+
+#: includes/class-taxonomy.php:479
+msgid "Coverage could not be deleted."
+msgstr ""
+
+#: includes/slack/class-slack-api-client.php:269
+#: includes/slack/class-slack-webhook-controller.php:297
+msgid "Slack is not configured."
+msgstr ""
+
+#: includes/slack/class-slack-api-client.php:310
+msgid "Invalid JSON response from Slack."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:61
+msgid "Channel not found. Make sure the bot is invited to the channel, or use the channel ID (e.g., C12345678) instead of the name."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:62
+msgid "The bot is not a member of this channel. Please invite the bot first using /invite @Rolling Coverage in Slack."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:63
+msgid "This channel is already linked to another coverage."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:64
+msgid "This coverage is already connected to another channel."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:65
+msgid "This coverage could not be found. Please refresh the page and try again."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:66
+msgid "That channel could not be used. Try a channel ID like C12345678 or a channel name like #general."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:67
+msgid "Please select a coverage."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:68
+msgid "Selected coverage no longer exists."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:70
+msgid "A bot token and signing secret are both required."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:71
+msgid "The bot token is invalid. It must start with xoxb-."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:72
+msgid "The signing secret is invalid. It must be a 32-character hex string."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:74
+msgid "The bot token was rejected by Slack. Check that it starts with xoxb- and is still valid."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:75
+msgid "The bot token has been revoked. Generate a new one in your Slack app settings."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:76
+msgid "No valid token was provided to Slack."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:77
+msgid "The Slack workspace account is inactive."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:79
+msgid "The ignore prefix must be 1-10 printable characters."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:81
+msgid "Slack integration is not configured. Please set up the bot token in Slack settings."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:82
+msgid "Could not reach Slack. Please try again."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:315
+msgid "Invalid Slack signature."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:699
+msgid "🔔 Auto-publish is now enabled for this channel — new entries publish immediately."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:700
+msgid "🔕 Auto-publish is now disabled for this channel — new entries are saved as drafts."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:848
+msgid "👋 I'm now connected and will ingest messages for rolling coverage."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:890
+msgid "This command is not available for your workspace."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:903
+msgid "Unknown command."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:924
+msgid "Select a Rolling Coverage"
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:932
+msgid "Type to search..."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:944
+msgid "Connect Channel"
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:948
+#: dist/admin.js:192
+msgid "Connect"
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:952
+#: dist/admin.js:192
+#: dist/admin.js:194
+msgid "Cancel"
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:960
+msgid "Failed to open the connect modal. Please try again."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:976
+#: includes/slack/class-slack-webhook-controller.php:1004
+msgid "This channel is not connected to any coverage."
+msgstr ""
+
+#. translators: 1: coverage name
+#: includes/slack/class-slack-webhook-controller.php:987
+#, php-format
+msgid "Disconnected from \"%1$s\"."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:990
+msgid "Channel unlinked successfully."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:1009
+#: dist/admin.js:199
+msgid "(unknown)"
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:1013
+msgid "autopublish enabled"
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:1014
+msgid "autopublish disabled"
+msgstr ""
+
+#. translators: 1: term name, 2: autopublish status
+#: includes/slack/class-slack-webhook-controller.php:1019
+#, php-format
+msgid "Connected to \"%1$s\" — %2$s."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:1308
+msgid "auto-publish is enabled"
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:1309
+msgid "auto-publish is disabled"
+msgstr ""
+
+#. translators: 1: coverage name, 2: auto-publish status
+#: includes/slack/class-slack-webhook-controller.php:1316
+#, php-format
+msgid "✅ This channel is now connected to the \"%1$s\" coverage. %2$s."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:1320
+msgid "✅ This channel is now connected to rolling coverage."
+msgstr ""
+
+#. translators: 1: coverage name
+#: includes/slack/class-slack-webhook-controller.php:1362
+#, php-format
+msgid "🔌 This channel is no longer connected to the \"%1$s\" coverage."
+msgstr ""
+
+#: includes/slack/class-slack-webhook-controller.php:1365
+msgid "🔌 This channel is no longer connected to rolling coverage."
+msgstr ""
+
+#: dist/admin.js:1
+#: dist/admin.js:194
+msgid "Trashed Entries"
+msgstr ""
+
+#. translators: %d: Number of fields that need attention
+#: dist/admin.js:192
+#: dist/admin.js:194
+msgid "Name"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Enter coverage name…"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Used as the headline in LiveBlogPosting structured data when this coverage is shown on a page or post. Choose a reader-facing title rather than an internal label."
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Learn more"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Description"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Optional description…"
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:194
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Status"
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:194
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Active"
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:194
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Paused"
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:194
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Archived"
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Canonical URL"
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "https://example.com/live-coverage"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "The page readers land on when they open a notification for this coverage."
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Disable ads"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Disable ads for this coverage, useful for emergency or other sensitive news coverage."
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Edit Coverage"
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:194
+msgid "New Coverage"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Failed to save coverage"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Update"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Create"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Channel:"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "(unknown name)"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Slack ID:"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Messages from this Slack channel will be ingested as entries."
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Auto-publish entries"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Enter a channel name (e.g., #general) or channel ID (e.g., C12345678). The bot must be invited to the channel first."
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:194
+msgid "Close"
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:199
+#: dist/admin.js:200
+msgid "Disconnect"
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Failed to load auto-publish setting."
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:200
+msgid "Failed to update auto-publish setting."
+msgstr ""
+
+#: dist/admin.js:192
+msgid "Could not connect to Slack."
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:200
+msgid "Failed to disconnect."
+msgstr ""
+
+#: dist/admin.js:192
+#: dist/admin.js:194
+msgid "(no title)"
+msgstr ""
+
+#. translators: %s: entry title.
+#: dist/admin.js:193
+#, js-format
+msgid "New entry: %s"
+msgstr ""
+
+#. translators: %s: entry title.
+#: dist/admin.js:194
+#, js-format
+msgid "Updated: %s"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "1 entry removed"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Confirm"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Published"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Draft"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Pending"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Scheduled"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Private"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Trashed"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Term ID"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Trash"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Created"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Modified"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Edit"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Are you sure you want to trash this coverage? Its entries will be hidden from the frontend until the coverage is restored."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Are you sure you want to trash these coverages? Their entries will be hidden from the frontend until the coverages are restored."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Coverage trashed."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Coverages trashed."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to trash coverage."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Restore"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Coverage restored."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Coverages restored."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to restore coverage."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Delete Permanently"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Are you sure you want to permanently delete this coverage? This cannot be undone. Associated entries (excluding trashed entries) will be purged"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Are you sure you want to permanently delete these coverages? This cannot be undone. Associated entries (excluding trashed entries) will be purged"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Coverage permanently deleted."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Coverages permanently deleted."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to delete coverage."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Connection"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to save entry."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Save"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Quick Edit"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Hide sidebar"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Show sidebar"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Discard changes"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "You have unsaved changes. Are you sure you want to close and discard them?"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Read more text"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Breakout setting saved."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to save breakout setting"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "This entry is archived, are you sure you want to edit it?"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "This entry's coverage is archived, are you sure you want to edit it?"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "This entry's coverage is paused, are you sure you want to edit it?"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Are you sure you want to edit this entry?"
+msgstr ""
+
+#: dist/admin.js:194
+#: dist/admin.js:197
+msgid "Breakout"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Breakout post created."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to create breakout post"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Restore Breakout Post"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Breakout post restored."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to restore breakout post."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Permanently Delete Breakout Post"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Breakout post permanently deleted."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to permanently delete breakout post."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Breakout Setting"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Archive"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entry archived."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entries archived."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to archive entry."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Unarchive"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entry unarchived."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entries unarchived."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to unarchive entry."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Are you sure you want to trash this entry?"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Are you sure you want to trash these entries?"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entry trashed."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entries trashed."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to trash entry."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Pin"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entry pinned."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to pin entry."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entry restored. A recovery coverage was created."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entries restored. Recovery coverages were created where needed."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entry restored."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entries restored."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to restore some entries."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to restore entries."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Are you sure you want to permanently delete this entry? This cannot be undone."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Are you sure you want to permanently delete these entries? This cannot be undone."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entry permanently deleted."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entries permanently deleted."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to delete entry."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Unpin"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Entry unpinned."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Failed to unpin entry."
+msgstr ""
+
+#: dist/admin.js:194
+msgid "None"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Post ID"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Title"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Author"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "Source"
+msgstr ""
+
+#: dist/admin.js:194
+msgid "WordPress"
+msgstr ""
+
+#. translators: %s: date the entry was archived.
+#: dist/admin.js:197
+#, js-format
+msgid "Archived on %s. This entry can't be pinned, trashed, or given a new breakout post. Unarchive it to allow those actions."
+msgstr ""
+
+#: dist/admin.js:197
+msgid "Categories"
+msgstr ""
+
+#: dist/admin.js:197
+msgid "Tags"
+msgstr ""
+
+#: dist/admin.js:197
+msgid "Failed to create entry"
+msgstr ""
+
+#. translators: %d: number of updates.
+#: dist/admin.js:198
+#, js-format
+msgid "%d updates in the last 10s"
+msgstr ""
+
+#: dist/admin.js:198
+msgid "No trashed entries found."
+msgstr ""
+
+#: dist/admin.js:198
+msgid "Failed to load AI settings."
+msgstr ""
+
+#: dist/admin.js:198
+msgid "AI settings saved."
+msgstr ""
+
+#: dist/admin.js:198
+msgid "Failed to save AI settings."
+msgstr ""
+
+#: dist/admin.js:198
+msgid "Prompts reset to defaults. Click Save Settings to persist."
+msgstr ""
+
+#: dist/admin.js:198
+msgid "Key Takeaways"
+msgstr ""
+
+#: dist/admin.js:198
+msgid "AI features are not available on this site. An administrator must enable the AI plugin and configure a provider before these prompts take effect."
+msgstr ""
+
+#: dist/admin.js:198
+msgid "One or more prompts exceed the maximum length. Shorten the text to stay within the limit."
+msgstr ""
+
+#: dist/admin.js:198
+msgid "Prompt Configuration"
+msgstr ""
+
+#: dist/admin.js:198
+msgid "Key Takeaways Prompt"
+msgstr ""
+
+#. translators: 1: character count, 2: max character count
+#: dist/admin.js:199
+#, js-format
+msgid "The instruction sent to the AI along with coverage entries. Use {max_takeaways} as a placeholder for the maximum number of takeaways. Keep this short — the model already has the liveblog context. (%1$d / %2$d characters)"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Reset to Defaults"
+msgstr ""
+
+#: dist/admin.js:199
+#: dist/admin.js:200
+msgid "Save Settings"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "No chat-source adapters are configured yet."
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Bot User OAuth Token"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Starts with xoxb-"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Signing Secret"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "32-character hex string"
+msgstr ""
+
+#: dist/admin.js:199
+#: dist/admin.js:200
+msgid "Ignore Prefix"
+msgstr ""
+
+#: dist/admin.js:199
+#: dist/admin.js:200
+msgid "Messages starting with this prefix are ignored during ingestion."
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Connection Status"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Connected"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Workspace:"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Workspace ID:"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Bot token:"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Slack bot user ID:"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Connect to Slack"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Verify & Connect"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Channel"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Connected to"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Auto-publish"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Last Sync"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "Actions"
+msgstr ""
+
+#: dist/admin.js:199
+msgid "(deleted)"
+msgstr ""
+
+#. translators: %s: channel name
+#: dist/admin.js:200
+#, js-format
+msgid "Auto-publish entries from %s"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Never"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Channel Mappings"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Please connect to Slack first."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "No channels are currently linked."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "WordPress Bot User"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "User ID:"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Username:"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Display name:"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Email:"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Roles:"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "This WordPress user is automatically created and assigned as the author of all entries ingested from Slack."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "No WordPress bot user found."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Global Settings"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Ingestion Settings"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Setup Guide"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Create a Slack app at"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Paste the manifest below into the app manifest editor"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Install the app to your workspace"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Copy the Bot User OAuth Token and Signing Secret"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Paste them into the Credentials tab and click Verify & Connect"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "App Manifest"
+msgstr ""
+
+#: dist/admin.js:200
+#: dist/blocks/rolling-coverage/index.js:1
+#: dist/blocks/share/view.js:1
+msgid "Copied!"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Copy Manifest"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Failed to start monitor."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Monitoring active"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "events"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "No events yet. Send a Slack message or trigger a slash command to see activity here."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Credentials"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Settings"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Monitor"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Failed to load channels."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Failed to load Slack settings."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Unlink this channel from its coverage? Ingestion from this channel will stop."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Channel unlinked."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Failed to unlink channel."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Connected to Slack workspace:"
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Connection failed."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Are you sure you want to disconnect Slack? All channel mappings will be removed."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Settings saved."
+msgstr ""
+
+#: dist/admin.js:200
+msgid "Failed to save settings."
+msgstr ""
+
+#: dist/blocks/coverage-follow/index.js:1
+msgid "Configure the OneSignal Push Notifications plugin (App ID and REST API Key) for this button to appear on the site."
+msgstr ""
+
+#: dist/blocks/coverage-follow/index.js:1
+msgid "The OneSignal Push Notifications plugin is on an unsupported version — update it to the latest version for this button to appear on the site."
+msgstr ""
+
+#: dist/blocks/coverage-follow/index.js:1
+msgid "Install and activate the OneSignal Push Notifications plugin for this button to appear on the site."
+msgstr ""
+
+#: dist/blocks/coverage-follow/index.js:1
+msgid "Setup guide"
+msgstr ""
+
+#: dist/blocks/deep-link-cta/index.js:1
+msgid "Modal content template:"
+msgstr ""
+
+#: dist/blocks/deep-link-cta/index.js:1
+msgid "You linked to an older entry ({{entry_title}})."
+msgstr ""
+
+#: dist/blocks/deep-link-cta/index.js:1
+msgid "Enter CTA text… Use {{entry_title}} as a placeholder for the entry title."
+msgstr ""
+
+#: dist/blocks/deep-link-cta/view.js:1
+msgid "Close and return to coverage"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Default"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Archived Coverage"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Edited State"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Coverage status updated."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Could not update the coverage status."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Key takeaways generated."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Failed to generate key takeaways."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Coverage"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Search for a coverage…"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Writes back to the coverage itself — changes here affect every block connected to it."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Apply"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "The page readers land on when they open a notification for this coverage. Shared across every block connected to this coverage."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Use this page"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Save this page to get its permalink."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Display"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Entries per page"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Used for both the initial number of entries shown and the infinite-scroll page size."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Poll interval (seconds)"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Generate a summary of key takeaways from this coverage's entries. Prompts are configured by site administrators on the AI settings page."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Generated Output"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Copy"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Ads"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Ads are disabled for this coverage. Enable them in the coverage settings to configure ad settings here."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Enable and configure the Rolling Coverage: Entry placement in Newspack Ads to show ads."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Enable ads"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Shows ads at a regular interval in the feed."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Ads interval"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "Show an ad after every N entries. Maximum 3 ads for the initial feed and load more; no cap for new entries."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "This coverage has been trashed and is no longer available. Select a different coverage or restore it from the Rolling Coverage admin."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/index.js:1
+msgid "No published entries yet — showing the template only. Add entries to this coverage to preview real content here."
+msgstr ""
+
+#. translators: %d: number of new coverage entries just added.
+#: dist/blocks/rolling-coverage/view.js:2
+#, js-format
+msgid "%d new post added"
+msgid_plural "%d new posts added"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of new coverage entries waiting to be shown.
+#: dist/blocks/rolling-coverage/view.js:3
+#, js-format
+msgid "%d new post"
+msgid_plural "%d new posts"
+msgstr[0] ""
+msgstr[1] ""
+
+#: dist/blocks/share/view.js:1
+msgid "Copy this link:"
+msgstr ""
+
+#: dist/blocks/breakout-post-link/block.json
+#: src/blocks/breakout-post-link/block.json
+msgctxt "block title"
+msgid "Breakout Post Link"
+msgstr ""
+
+#: dist/blocks/breakout-post-link/block.json
+#: src/blocks/breakout-post-link/block.json
+msgctxt "block description"
+msgid "Displays a link to the published breakout post for this entry. Nothing is rendered until a breakout post is available."
+msgstr ""
+
+#: dist/blocks/coverage-archived-notice/block.json
+#: src/blocks/coverage-archived-notice/block.json
+msgctxt "block title"
+msgid "Coverage Archived Notice"
+msgstr ""
+
+#: dist/blocks/coverage-archived-notice/block.json
+#: src/blocks/coverage-archived-notice/block.json
+msgctxt "block description"
+msgid "Notifies readers that coverage of this event has ended."
+msgstr ""
+
+#: dist/blocks/coverage-follow/block.json
+#: src/blocks/coverage-follow/block.json
+msgctxt "block title"
+msgid "Coverage Follow Button"
+msgstr ""
+
+#: dist/blocks/coverage-follow/block.json
+#: src/blocks/coverage-follow/block.json
+msgctxt "block description"
+msgid "Lets readers follow this coverage to receive push notifications for new entries. Rendered once at the top of the coverage."
+msgstr ""
+
+#: dist/blocks/deep-link-cta/block.json
+#: src/blocks/deep-link-cta/block.json
+msgctxt "block title"
+msgid "Deep Link CTA"
+msgstr ""
+
+#: dist/blocks/deep-link-cta/block.json
+#: src/blocks/deep-link-cta/block.json
+msgctxt "block description"
+msgid "Shown when a shared link points to an entry not in the initial page."
+msgstr ""
+
+#: dist/blocks/rolling-coverage/block.json
+#: src/blocks/rolling-coverage/block.json
+msgctxt "block title"
+msgid "Rolling Coverage"
+msgstr ""
+
+#: dist/blocks/rolling-coverage/block.json
+#: src/blocks/rolling-coverage/block.json
+msgctxt "block description"
+msgid "Displays the live entries of a rolling coverage, with polling for new entries and infinite scroll for older ones."
+msgstr ""
+
+#: dist/blocks/share/block.json
+#: src/blocks/share/block.json
+msgctxt "block title"
+msgid "Share"
+msgstr ""
+
+#: dist/blocks/share/block.json
+#: src/blocks/share/block.json
+msgctxt "block description"
+msgid "Copy a deep link to this entry for sharing on social media."
+msgstr ""

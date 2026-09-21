@@ -1,0 +1,100 @@
+= 4.3.1 =
+* Tested up to WordPress 7.1.
+* Feature: Welcome modal on first activation shows local image and video processing availability, site-level missing capability chips (formats no local processor can provide), and a subtle CDN/cloud upsell when unlicensed.
+* Feature: Once-ever review prompt on Overview after meaningful savings (distinct optimized attachments and bandwidth saved), with WordPress.org review and support links; suppressed while welcome is showing or optimizations have failed. Force-open with `flux_show_review=1` for testing. Dialog uses BrandIcon, inline savings Chip, solopreneur copy, and close control.
+* Feature: Need help links on Overview failed-optimizations notice and attachment details error alerts.
+* Deprecated: VideoConverter::get_conversion_stats() stub; use ConversionTracker for live conversion statistics.
+
+= 4.3.0 =
+* Feature: Local HEIC/HEIF conversion with Imagick decode (libheif 1.18.2+ recommended for modern iOS photos), optional animated HEIF-to-WebP via FFmpeg, and separate HEIC capability reporting.
+* Feature: Unified Action Scheduler retries for local and cloud failures (3 automatic attempts with progressive backoff), with processing routed by current license/settings and Flux logging on failures.
+* Feature: Redesigned attachment details panel with async REST loading, compact skeleton placeholder, MUI Grid responsive layout that stays within the WordPress container, size accordion, format URLs, and a license-aware CDN upsell.
+* Feature: Attachment details poll every 15 seconds while Pending (including locally deferred video conversions) and refresh Convert/Disable/Enable actions in place without a full page reload.
+* Feature: Attachment details show only formats enabled and supported by the active media converter (WebP/AVIF for images, AV1/WebM for videos), with per-size savings badges compared to the same-size original.
+* Feature: Attachment details and conversion controls use WordPress `edit_post` attachment capabilities.
+* Fix: External processing activation requires a valid license (`is_external_processing_active`); uninstall removes the correct option keys while preserving shared suite account ID; safer database table-drop SQL; external operations builder hardening.
+* Fix: Image conversion commits files and metadata/statistics together; skipped retry dispatches no longer consume the retry budget; plugin and common external API URL/timeout constants stay aligned before shared client init.
+
+= 4.2.0 =
+* Feature: Media Library shows optimization status and filter options (Optimized, Pending, Failed, Disabled, Unprocessed). Conversion stats API now reports failed external job counts. New constants added: FLUX_MEDIA_OPTIMIZER_STALE_JOB_THRESHOLD, FLUX_MEDIA_OPTIMIZER_FAILED_JOB_RETRY_LIMIT, FLUX_MEDIA_OPTIMIZER_CLEANUP_BATCH_SIZE.
+* Feature: Daily cleanup cron recovers stale external jobs, automatically retries failed jobs with a set limit, and cleans expired admin notices.
+
+= 4.1.6 =
+* Security: Harden external webhook endpoint (account ID verification in permission_callback, job-state checks, CDN host allowlist, rate limiting).
+* Security: Register webhook route only when external service is enabled and license is valid.
+* Fix: Remove duplicate admin AJAX handler registration for attachment actions.
+* Security: Avoid exposing raw exception messages in plugin REST error responses.
+* Removed legacy plugin logs REST API and `flux_media_optimizer_logs` table creation; logging uses flux-plugins-common (`flux_plugins_logs` + `flux-plugins-common/v1/logs`).
+
+= 4.1.5 =
+* Guard against php 8.0 - we support php 8.1>.
+* Removed some unused code and minor cleanup.
+
+= 4.1.4 =
+* Updating dependency to be compatible with php 8.
+
+= 4.1.2 =
+* Updated build scripts and added link on settings page.
+
+= 4.1.1 =
+* Moved old compatibility system over to common lib.
+
+= 4.1.0 =
+* Moved logs and more infrastructure to common lib - internal prepartion for Flux Suite development.
+
+= 4.0.1 =
+* Accidental commit removed.
+
+= 4.0.0 =
+* Updated navigation in preparation for features and plugin organization.
+* Fixed issues with Action Scheduler Bulk Processing.
+* Core system is being decoupled for future plugin integrations.
+* Fixed WP min version verification tags - we support WP 5.8 now.
+
+= 3.0.3 =
+* Fixed async operations in certain scenarios.
+
+= 3.0.2 =
+* Fixed status message on attachment screen
+* Fixed issue with local video processing not being queued to async
+
+= 3.0.1 =
+* Fixed readme formatting
+
+= 3.0.0 =
+* Major architecture refactoring for improved performance and maintainability
+* Added optional global CDN integration for worldwide media delivery
+* Enhanced video optimization with AV1 and WebM support
+* Improved image conversion with better format detection
+* Streamlined settings interface with better organization
+* Enhanced bulk conversion processing
+* Improved error handling and logging
+* Better WordPress integration with Gutenberg blocks
+* Full compatibility with WordPress 6.2+
+
+= 2.0.5 =
+* Security improvements: Added comprehensive input sanitization for all settings
+* Security improvements: Fixed unescaped error messages in AJAX handlers
+* Security improvements: Fixed database query safety in uninstall function
+* Security improvements: Escaped JavaScript values in onclick handlers
+* Code quality: Refactored settings sanitization to use declarative schema approach
+* Code quality: Added REST API input validation and sanitization callbacks
+* Internationalization: All error messages are now translatable
+
+= 2.0.0 =
+* Added animated GIF support with animation preservation
+* Automatic detection and use of Imagick for animated GIF conversion (when available)
+* Graceful fallback to GD for static GIFs and animated GIFs when Imagick is unavailable
+* Enhanced image format detection for GIF files
+* Improved processor selection logic for optimal format support
+
+= 1.0.0 =
+* Initial release
+* Automatic WebP and AVIF image conversion
+* Hybrid approach for maximum browser compatibility
+* Bulk processing for existing media
+* Modern React-based admin interface
+* WordPress integration with Gutenberg blocks
+* Quality control settings
+* Conversion statistics and performance metrics
+* Privacy-compliant architecture ready for optional external service integrations

@@ -1,0 +1,56 @@
+.wpfolio-pda-anylc-clearfix:before, .wpfolio-pda-anylc-clearfix:after{content: ""; display: table;}
+.wpfolio-pda-anylc-clearfix::after{clear: both;}
+.wpfolio-pda-anylc-optin-wrap *{box-sizing:border-box; outline:0;}
+.wpfolio-pda-anylc-hide{display:none;}
+.wpfolio-pda-anylc-optin-wrap .button{border-radius:0;}
+.wpfolio-pda-anylc-optin-wrap{max-width: 700px; width: 100%; border:1px solid #ddd; background-color: #fff;}
+.wpfolio-pda-anylc-optin-icon-wrap{font-size:0; padding: 15px;}
+.wpfolio-pda-anylc-optin-icon{width: 20%; display:inline-block; vertical-align:middle; border:1px solid #ddd; padding:2px; max-height:84px; height:100%; text-align:center;}
+.wpfolio-pda-anylc-optin-plus{width: 20%; display:inline-block; vertical-align:middle; text-align:center;}
+.wpfolio-pda-anylc-optin-icon img{max-height: 78px; max-width:100%; width: 100%; display: block;}
+.wpfolio-pda-anylc-optin-plus .dashicons-plus{color:#999; height:auto; width:auto; font-size:26px;}
+.wpfolio-pda-anylc-wp-badge i{height:100%; width:100%; line-height:normal; font-size:60px; line-height: 78px; background-color:#0073aa; color: #fff;}
+.wpfolio-pda-anylc-optin-cnt{padding: 0 15px 15px 15px; line-height: 24px; font-size: 15px;}
+.wpfolio-pda-anylc-optin-cnt p{line-height: 24px; font-size: 15px;}
+.wpfolio-pda-anylc-subs-wrap, .wpfolio-pda-anylc-promotion-wrap{margin:10px 0; font-size:14px; font-weight:600;}
+.wpfolio-pda-anylc-optin-action{background-color:#C0C7CA; padding: 15px 15px;}
+.wpfolio-pda-anylc-optin-action .button{height: auto !important; padding: 2px 12px !important; font-size: 15px; font-weight: 600;}
+.wpfolio-pda-anylc-optin-permission{padding: 10px 15px; text-align:center; font-size: 12px;}
+.wpfolio-pda-anylc-terms{padding: 5px 15px; text-align:center; background-color:#e5e5e5; font-size: 11px; color: #999;}
+.wpfolio-pda-anylc-terms a{color: #999;}
+.wpfolio-pda-anylc-optin-permission a, .wpfolio-pda-anylc-terms a{text-decoration:none; box-shadow:none;}
+.wpfolio-pda-anylc-optin-permission a{display:block;}
+.wpfolio-pda-anylc-permission{margin: 15px 0 15px 0; text-align: left;}
+.wpfolio-pda-anylc-permission i{height: auto; width: auto; font-size: 40px;}
+.wpfolio-pda-anylc-permission > div{display: inline-block; margin: 0 0 0 10px; line-height: 21px;}
+.wpfolio-pda-anylc-permission .wpfolio-pda-anylc-permission-name{display: block; font-weight: 600; font-size: 14px;}
+.wpfolio-pda-anylc-permission .wpfolio-pda-anylc-permission-info{display: block;}
+.button.wpfolio-pda-anylc-btn{height: auto !important; padding: 2px 12px !important; font-size:15px; font-weight:600; height:auto !important; padding: 2px 12px !important; font-size:15px; font-weight:600; border-radius:0;}
+.wpfolio-pda-anylc-notice{position: relative;}
+.wpfolio-pda-anylc-notice .notice-dismiss{text-decoration:none;}
+.wpfolio-pda-anylc-center{text-align:center;}
+
+/* Popup CSS */
+.wpfolio-pda-anylc-popup-overlay{display:none; background: #0b0b0b none repeat scroll 0 0; height: 100%; left: 0; opacity: 0.8; overflow: hidden; position: fixed; top: 0; width: 100%; z-index: 9995;}
+.wpfolio-pda-anylc-popup-wrp{height: 100%; left: 0; outline: 0 none !important; position: fixed; top: 0; width: 100%; z-index: 9996; overflow:auto;}
+.wpfolio-pda-anylc-popup-block{background: #fff none repeat scroll 0 0; margin: 50px auto; max-width: 650px; position: relative; text-align: left; top:5%; min-height:65px;}
+.wpfolio-pda-anylc-popup-body .wpfolio-pda-anylc-popup-heading{font-size: 21px; font-weight: 600;}
+.wpfolio-pda-anylc-popup-header{padding: 20px; font-size: 18px; font-weight: 600; color: #666; border-bottom: 1px solid #e7e7e7;}
+.wpfolio-pda-anylc-popup-body{padding:20px;}
+.wpfolio-pda-anylc-popup-body p{margin:0 0 1em 0; font-size: 15px;}
+.wpfolio-pda-anylc-popup-body p:last-child{margin:0;}
+.wpfolio-pda-anylc-popup-footer{padding:20px; text-align:right;}
+.wpfolio-pda-anylc-no-overflow{overflow:hidden;}
+.wpfolio-pda-anylc-popup-title{background-color: #0073aa; color: #fff; font-size: 20px; padding: 10px 20px; line-height:normal;}
+
+/* Offers Page */
+.wpfolio-pda-anylc-offer-wrap{border:1px solid #ccc; padding:15px; max-width: 800px; background-color:#fff; margin:0 0 30px 0;}
+.wpfolio-pda-anylc-offer-wrap img{max-height:100%; max-width:100%; height:auto; width:auto;}
+.wpfolio-pda-anylc-offer-wrap .wpfolio-pda-anylc-offer-title{font-size: 22px; line-height: normal; font-weight: 600; padding: 0 0 10px 0; border-bottom: 1px solid #ddd; margin: 0 0 10px 0;}
+.wpfolio-pda-anylc-offer-wrap .wpfolio-pda-anylc-offer-body{margin-bottom: 10px;}
+.wpfolio-pda-anylc-offer-wrap .wpfolio-pda-anylc-offer-desc p{font-size: 16px;}
+.wpfolio-pda-anylc-offer-wrap a:focus, .wpfolio-pda-anylc-offer-wrap a:active, .wpfolio-pda-anylc-offer-wrap a:hover{box-shadow:none; outline:none;}
+@media only screen and (max-width:320px) {
+	.wpfolio-pda-anylc-optin-icon{max-height: 56px;}
+	.wpfolio-pda-anylc-wp-badge i{font-size: 35px; line-height: 50px;}
+}

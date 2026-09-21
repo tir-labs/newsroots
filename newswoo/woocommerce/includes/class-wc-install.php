@@ -1,0 +1,1 @@
+// Shipping zone tables removed in NewsWoo

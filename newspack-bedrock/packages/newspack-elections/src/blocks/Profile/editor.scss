@@ -1,0 +1,29 @@
+
+.wp-block-npe-profile{
+	&.is-vertical .profile-inner > .block-list-appender{
+		position:relative;
+		width:100%;
+	}
+
+	.gp-dim-field{
+	
+	background-color: rgba(111,111,111,0.2);
+	outline: 1px dashed #000000;
+	> * {
+		opacity : 0.5;
+	}
+
+		&::before{
+			content : "Hidden Field";
+			position: absolute;
+			background-color :#000;
+			color: #fff;
+			font-size: 0.5rem;
+			padding: 0.1rem 0.2rem;
+			bottom:100%;
+			left: -1px;
+			opacity:1;
+		}
+	}
+}
+

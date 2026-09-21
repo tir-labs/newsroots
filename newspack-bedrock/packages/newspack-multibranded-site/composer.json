@@ -1,0 +1,21 @@
+{
+  "name": "automattic/newspack-multibranded-site",
+  "description": "newspack-multibranded-site",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "version": "2.2.0",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "newspack",
+    "bedrock"
+  ],
+  "homepage": "https://github.com/Postdated/Newspack",
+  "require": {
+    "php": ">=8.3",
+    "composer/installers": "^2.0"
+  },
+  "extra": {
+    "installer-name": "newspack-multibranded-site"
+  }
+}

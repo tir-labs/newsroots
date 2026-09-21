@@ -1,0 +1,6 @@
+#pda_setting_form 
+	label.error {
+	display: block;
+	margin: 0.5rem 0 0;
+	color: red
+}

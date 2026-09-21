@@ -1,0 +1,1424 @@
+<?php
+/**
+ * Settings for Newspack Group Subscriptions.
+ *
+ * @package Newspack
+ */
+
+namespace Newspack;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Settings class.
+ */
+class Group_Subscription_Settings {
+	/**
+	 * Pricing modes. Per team is the flat price the feature shipped with; per seat
+	 * bills the product price multiplied by the purchased seat count (the line-item
+	 * quantity), mirroring Teams for WooCommerce Memberships' per-member pricing.
+	 */
+	const PRICING_MODE_PER_TEAM = 'per_team';
+	const PRICING_MODE_PER_SEAT = 'per_seat';
+
+	/**
+	 * Default group subscription settings.
+	 */
+	const DEFAULT_SETTINGS = [
+		'enabled'      => false,
+		'limit'        => 0,
+		'name'         => '',
+		'pricing_mode' => self::PRICING_MODE_PER_TEAM,
+		'min_seats'    => 1,
+		'max_seats'    => 0,
+	];
+
+	/**
+	 * Prefix for group subscription meta keys.
+	 */
+	const GROUP_SUBSCRIPTION_META_PREFIX = '_newspack_group_subscription_';
+
+	/**
+	 * Maximum length for a custom group name. Mirrored by the rename input's maxlength.
+	 */
+	const GROUP_NAME_MAX_LENGTH = 100;
+
+	/**
+	 * Initialize hooks and filters.
+	 */
+	public static function init() {
+		// Add Group Subscription options to subscription and variable subscription product admin pages.
+		\add_filter( 'newspack_custom_product_options', [ __CLASS__, 'add_custom_product_options' ] );
+		\add_filter( 'newspack_custom_product_pricing_options', [ __CLASS__, 'add_custom_product_pricing_options' ] );
+
+		// Add Group Subscription options to subscription admin pages.
+		\add_action( 'admin_enqueue_scripts', [ __CLASS__, 'admin_enqueue_scripts' ] );
+		\add_action( 'add_meta_boxes', [ __CLASS__, 'add_group_subscription_meta_box' ], 26, 2 );
+		\add_action( 'woocommerce_process_shop_order_meta', [ __CLASS__, 'save_group_subscription_meta' ], 10, 2 );
+		// Priority 20 is load-bearing: see save_group_subscription_seats().
+		\add_action( 'woocommerce_process_shop_order_meta', [ __CLASS__, 'save_group_subscription_seats' ], 20, 2 );
+		\add_action( 'wp_ajax_newspack_group_subscription_search_users', [ __CLASS__, 'ajax_search_users' ] );
+
+		// Customize subscription column in admin list table for group subscriptions.
+		\add_filter( 'woocommerce_subscription_list_table_column_content', [ __CLASS__, 'filter_subscription_column_content' ], 10, 3 );
+
+		// Group subscription filter dropdown on subscription list table.
+		\add_action( 'woocommerce_order_list_table_restrict_manage_orders', [ __CLASS__, 'add_group_subscription_filter' ] );
+		\add_action( 'restrict_manage_posts', [ __CLASS__, 'add_group_subscription_filter' ] );
+
+		// Filter subscription list table query by group status.
+		\add_filter( 'woocommerce_shop_subscription_list_table_prepare_items_query_args', [ __CLASS__, 'filter_subscriptions_by_group' ] );
+		\add_filter( 'request', [ __CLASS__, 'filter_subscriptions_by_group_cpt' ] );
+
+		// Clear group subscription IDs cache when product group settings change.
+		\add_action( 'woocommerce_process_product_meta', [ __CLASS__, 'maybe_clear_cache_on_product_save' ] );
+
+		// Clear group subscription IDs cache when a subscription is trashed or deleted.
+		\add_action( 'wp_trash_post', [ __CLASS__, 'maybe_clear_cache_on_subscription_delete' ] );
+		\add_action( 'before_delete_post', [ __CLASS__, 'maybe_clear_cache_on_subscription_delete' ] );
+		\add_action( 'woocommerce_trash_subscription', [ __CLASS__, 'clear_group_subscription_ids_cache' ] );
+		\add_action( 'woocommerce_delete_subscription', [ __CLASS__, 'clear_group_subscription_ids_cache' ] );
+
+		// Include group name in subscription search.
+		\add_filter( 'woocommerce_shop_subscription_search_fields', [ __CLASS__, 'add_group_name_search_field' ] );
+		\add_filter( 'woocommerce_order_table_search_query_meta_keys', [ __CLASS__, 'add_group_name_hpos_search_field' ] );
+		\add_filter( 'posts_join', [ __CLASS__, 'search_group_name_join' ], 10, 2 );
+		\add_filter( 'posts_search', [ __CLASS__, 'search_group_name_where' ], 10, 2 );
+
+		// Publisher-configurable group label settings. The editing UI lives in the
+		// Audience wizard's Groups tab; this registration only guards storage
+		// validation when the options are written directly.
+		\add_action( 'admin_init', [ __CLASS__, 'register_label_settings' ] );
+	}
+
+	/**
+	 * Enqueue admin scripts.
+	 */
+	public static function admin_enqueue_scripts() {
+		if ( ! function_exists( 'wcs_get_page_screen_id' ) ) {
+			return;
+		}
+		$screen = \get_current_screen();
+		$is_subscription_screen = in_array(
+			$screen->id,
+			[
+				'edit-shop_subscription',
+				'shop_subscription',
+				\wcs_get_page_screen_id( 'shop_subscription' ),
+			],
+			true
+		);
+		if ( ! $is_subscription_screen ) {
+			return;
+		}
+		\wp_enqueue_script(
+			'newspack-group-subscription-admin',
+			Newspack::plugin_url() . '/dist/group-subscription-admin.js',
+			[],
+			Newspack::asset_version( 'group-subscription-admin' ),
+			true
+		);
+		\wp_enqueue_style(
+			'newspack-group-subscription-admin',
+			Newspack::plugin_url() . '/dist/group-subscription-admin.css',
+			[],
+			Newspack::asset_version( 'group-subscription-admin' )
+		);
+		\wp_localize_script(
+			'newspack-group-subscription-admin',
+			'newspackGroupSubscriptions',
+			[
+				'apiUrl'                => \rest_url( Group_Subscription_API::NAMESPACE ),
+				'apiNonce'              => \wp_create_nonce( 'wp_rest' ),
+				'placeholder'           => __( 'Search for a reader...', 'newspack-plugin' ),
+				'invalid_email_message' => __( 'Please enter a valid email address.', 'newspack-plugin' ),
+				'success_message'       => __( 'Invitation sent successfully.', 'newspack-plugin' ),
+				'pending_label'         => __( '(pending)', 'newspack-plugin' ),
+				'remove_label'          => __( 'Remove', 'newspack-plugin' ),
+				'cancel_label'          => __( 'Cancel', 'newspack-plugin' ),
+				'cancel_error_message'  => __( 'Failed to cancel invitation.', 'newspack-plugin' ),
+				'limit_notice'          => self::get_limit_notice_text(),
+			]
+		);
+	}
+
+	/**
+	 * Get the "member limit reached" sentence shown in the admin metabox.
+	 *
+	 * Shared by the server-side render and the JS that rewrites the notice on live
+	 * add/remove/invite/cancel, so both always say the same thing — including the
+	 * publisher-configurable container label.
+	 *
+	 * @return string The translated notice text.
+	 */
+	public static function get_limit_notice_text() {
+		return sprintf(
+			/* translators: %s: lowercase singular group label (e.g. "group", "team"). */
+			__( 'This %s has reached its member limit. Remove a member, or raise the member limit above and save, to add more.', 'newspack-plugin' ),
+			Group_Subscription::get_label_lower( 'singular' )
+		);
+	}
+
+	/**
+	 * Add custom product options.
+	 *
+	 * @param array $custom_options Keyed array of custom product options.
+	 *
+	 * @return array Keyed array of custom product options.
+	 */
+	public static function add_custom_product_options( $custom_options ) {
+		if ( ! Content_Gate::is_newspack_feature_enabled() ) {
+			return $custom_options;
+		}
+		$custom_options['newspack_group_subscription_enabled'] = [
+			'id'            => self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled',
+			'label'         => __( 'Group subscription', 'newspack-plugin' ),
+			'description'   => __( 'Enable group subscriptions for this product.', 'newspack-plugin' ),
+			'default'       => self::DEFAULT_SETTINGS['enabled'],
+			'product_types' => [ 'subscription', 'subscription_variation' ],
+			'type'          => 'boolean',
+			'wrapper_class' => 'show_if_subscription',
+		];
+		return $custom_options;
+	}
+
+	/**
+	 * Add custom product pricing options.
+	 *
+	 * @param array $custom_product_pricing_options Keyed array of custom product pricing options.
+	 *
+	 * @return array Keyed array of custom product pricing options.
+	 */
+	public static function add_custom_product_pricing_options( $custom_product_pricing_options ) {
+		if ( ! Content_Gate::is_newspack_feature_enabled() ) {
+			return $custom_product_pricing_options;
+		}
+		$custom_product_pricing_options['newspack_group_subscription_pricing_mode'] = [
+			'id'            => self::GROUP_SUBSCRIPTION_META_PREFIX . 'pricing_mode',
+			'wrapper_class' => 'show_if_newspack_group_subscription_enabled',
+			'label'         => __( 'Group subscription pricing', 'newspack-plugin' ),
+			'desc_tip'      => true,
+			'description'   => __( 'Per group charges the subscription price once for the whole group. Per seat charges the subscription price for every seat the buyer chooses.', 'newspack-plugin' ),
+			'default'       => self::DEFAULT_SETTINGS['pricing_mode'],
+			'product_types' => [ 'subscription', 'subscription_variation' ],
+			'type'          => 'select',
+			'options'       => [
+				self::PRICING_MODE_PER_TEAM => __( 'Per group (flat price)', 'newspack-plugin' ),
+				self::PRICING_MODE_PER_SEAT => __( 'Per seat', 'newspack-plugin' ),
+			],
+		];
+		$custom_product_pricing_options['newspack_group_subscription_min_seats'] = [
+			'id'                => self::GROUP_SUBSCRIPTION_META_PREFIX . 'min_seats',
+			'wrapper_class'     => 'show_if_newspack_group_subscription_enabled show_if_newspack_group_subscription_per_seat',
+			'label'             => __( 'Minimum seats (including owner)', 'newspack-plugin' ),
+			'desc_tip'          => true,
+			'description'       => __( 'The fewest seats a buyer can purchase. The subscription price is charged per seat.', 'newspack-plugin' ),
+			'default'           => self::DEFAULT_SETTINGS['min_seats'],
+			'product_types'     => [ 'subscription', 'subscription_variation' ],
+			'type'              => 'number',
+			'custom_attributes' => [
+				'step' => 1,
+				'min'  => 1,
+			],
+		];
+		$custom_product_pricing_options['newspack_group_subscription_max_seats'] = [
+			'id'                => self::GROUP_SUBSCRIPTION_META_PREFIX . 'max_seats',
+			'wrapper_class'     => 'show_if_newspack_group_subscription_enabled show_if_newspack_group_subscription_per_seat',
+			'label'             => __( 'Maximum seats (including owner)', 'newspack-plugin' ),
+			'desc_tip'          => true,
+			'description'       => __( 'The most seats a buyer can purchase. Set to 0 for no maximum.', 'newspack-plugin' ),
+			'default'           => self::DEFAULT_SETTINGS['max_seats'],
+			'product_types'     => [ 'subscription', 'subscription_variation' ],
+			'type'              => 'number',
+			'custom_attributes' => [
+				'step' => 1,
+				'min'  => 0,
+			],
+		];
+		$custom_product_pricing_options['newspack_group_subscription_limit'] = [
+			'id'                => self::GROUP_SUBSCRIPTION_META_PREFIX . 'limit',
+			'wrapper_class'     => 'show_if_newspack_group_subscription_enabled show_if_newspack_group_subscription_per_team',
+			'label'             => __( 'Group subscription member limit (including owner)', 'newspack-plugin' ),
+			'desc_tip'          => true,
+			'description'       => __( 'Set the maximum number of members, including the owner. The minimum is 2, so there is always room for one member besides the owner. Set to 0 to allow an unlimited number of group members.', 'newspack-plugin' ),
+			'default'           => self::DEFAULT_SETTINGS['limit'],
+			'product_types'     => [ 'subscription', 'subscription_variation' ],
+			'type'              => 'number',
+			'custom_attributes' => [
+				'step' => 1,
+				'min'  => 0,
+			],
+		];
+		return $custom_product_pricing_options;
+	}
+
+	/**
+	 * Filter the subscription list table column content to show group name
+	 * and member count for group subscriptions.
+	 *
+	 * @param string           $column_content The column content HTML.
+	 * @param \WC_Subscription $subscription   The subscription object.
+	 * @param string           $column         The column name.
+	 *
+	 * @return string The filtered column content.
+	 */
+	public static function filter_subscription_column_content( $column_content, $subscription, $column ) {
+		if ( 'order_title' !== $column ) {
+			return $column_content;
+		}
+		if ( ! Group_Subscription::is_group_subscription( $subscription ) ) {
+			return $column_content;
+		}
+		$settings = self::get_subscription_settings( $subscription );
+		// The owner occupies a seat, so pair the owner-inclusive count with the
+		// owner-inclusive capacity (the limit) so this matches the member-facing card
+		// and Members tab. "Seats" rather than "members" because the owner fills one of
+		// them without being a member.
+		$member_count = Group_Subscription::get_member_count( $subscription );
+		$capacity     = Group_Subscription::get_member_capacity( $subscription );
+		$limit        = null !== $capacity
+			? $capacity
+			: __( 'unlimited', 'newspack-plugin' );
+
+		$group_markup = sprintf(
+			'<div class="newspack-group-subscription__column-info"><a href="%s"><strong>%s</strong></a> (%s)</div>',
+			\esc_url( $subscription->get_edit_order_url() ),
+			\esc_html( $settings['name'] ),
+			\esc_html(
+				sprintf(
+					/* translators: 1: number of seats taken, 2: total seats or "unlimited" */
+					__( '%1$s of %2$s seats', 'newspack-plugin' ),
+					$member_count,
+					$limit
+				)
+			)
+		);
+
+		// Prepend the group info before the standard WCS column markup so any
+		// status pills, preview affordances, or future additions from WCS are preserved.
+		return $group_markup . $column_content;
+	}
+
+	/**
+	 * Normalize a member limit to the owner-inclusive contract.
+	 *
+	 * The limit counts the owner, so a group must be allowed at least 2 seats to have
+	 * room for one member besides them. A positive limit is floored to that minimum;
+	 * unlimited (0) is left untouched. Applied on every read as well as on write, so
+	 * limits stored under the earlier "members in addition to the owner" meaning — a
+	 * stored 1 would otherwise leave zero usable member seats — stay workable without
+	 * a re-save. See Group_Subscription::get_member_seat_limit().
+	 *
+	 * @param mixed $limit The raw limit value.
+	 *
+	 * @return int The normalized limit: 0 (unlimited) or 2 and up.
+	 */
+	public static function normalize_limit( $limit ) {
+		$limit = absint( $limit );
+		return $limit > 0 ? max( 2, $limit ) : 0;
+	}
+
+	/**
+	 * Get the group subscription settings for a product.
+	 *
+	 * @param WC_Product|int $product The product object or ID.
+	 *
+	 * @return array The group subscription settings.
+	 */
+	public static function get_product_settings( $product ) {
+		$settings = self::DEFAULT_SETTINGS;
+		if ( ! function_exists( 'wc_get_product' ) ) {
+			return $settings;
+		}
+		if ( ! is_a( $product, 'WC_Product' ) ) {
+			$product = \wc_get_product( $product );
+		}
+		if ( ! $product ) {
+			return $settings;
+		}
+		$enabled_meta        = $product->get_meta( self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled', true );
+		$limit_meta          = $product->get_meta( self::GROUP_SUBSCRIPTION_META_PREFIX . 'limit', true );
+		$settings['enabled'] = '' !== $enabled_meta ? \wc_string_to_bool( $enabled_meta ) : $settings['enabled']; // Empty string means the meta is unset; any other value, including 'no' or false, is a real override.
+		$settings['limit']   = '' !== $limit_meta ? (int) $limit_meta : $settings['limit']; // Empty string means the meta is unset; any other value, including '0', is a real override.
+
+		$mode_meta                = $product->get_meta( self::GROUP_SUBSCRIPTION_META_PREFIX . 'pricing_mode', true );
+		$min_meta                 = $product->get_meta( self::GROUP_SUBSCRIPTION_META_PREFIX . 'min_seats', true );
+		$max_meta                 = $product->get_meta( self::GROUP_SUBSCRIPTION_META_PREFIX . 'max_seats', true );
+		$settings['pricing_mode'] = self::PRICING_MODE_PER_SEAT === $mode_meta ? self::PRICING_MODE_PER_SEAT : self::PRICING_MODE_PER_TEAM;
+		$settings['min_seats']    = '' !== $min_meta ? max( 1, absint( $min_meta ) ) : $settings['min_seats'];
+		$settings['max_seats']    = '' !== $max_meta ? absint( $max_meta ) : $settings['max_seats'];
+
+		/**
+		 * Filter the group subscription settings for a product.
+		 *
+		 * @param array $settings The group subscription settings.
+		 * @param WC_Product $product The product object.
+		 */
+		$settings = apply_filters( 'newspack_group_subscription_product_settings', $settings, $product );
+
+		$settings['limit'] = self::PRICING_MODE_PER_SEAT === $settings['pricing_mode']
+			? max( 1, (int) ( $settings['limit'] ?? 0 ) ) // Seats bought is exact capacity; a one-seat group is the owner alone.
+			: self::normalize_limit( $settings['limit'] ?? 0 );
+		return $settings;
+	}
+
+	/**
+	 * Get the group subscription settings for a subscription.
+	 *
+	 * @param WC_Subscription|int $subscription The subscription object or ID.
+	 *
+	 * @return array The group subscription settings.
+	 */
+	public static function get_subscription_settings( $subscription ) {
+		$subscription = WooCommerce_Subscriptions::sanitize_subscription( $subscription );
+		if ( ! $subscription || ! function_exists( 'wcs_get_canonical_product_id' ) ) {
+			return self::DEFAULT_SETTINGS;
+		}
+		$product_id          = WooCommerce_Subscriptions::get_subscription_product_id( $subscription );
+		$product             = ( $product_id && function_exists( 'wc_get_product' ) ) ? \wc_get_product( $product_id ) : null;
+		$settings            = self::get_product_settings( $product ? $product : $product_id );
+		$enabled_meta        = $subscription->get_meta( self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled', true );
+		$limit_meta          = $subscription->get_meta( self::GROUP_SUBSCRIPTION_META_PREFIX . 'limit', true );
+		$name_meta           = $subscription->get_meta( self::GROUP_SUBSCRIPTION_META_PREFIX . 'name', true );
+		$settings['enabled'] = '' !== $enabled_meta ? \wc_string_to_bool( $enabled_meta ) : $settings['enabled']; // Empty string means the meta is unset; any other value, including 'no' or false, is a real override.
+		$settings['limit']   = '' !== $limit_meta ? (int) $limit_meta : $settings['limit']; // Empty string means the meta is unset; any other value, including '0', is a real override.
+
+		// The subscription-level limit override above is a flat-mode concept; in
+		// per-seat mode the purchased seat count is the only source of truth for
+		// capacity, so it replaces whatever the override just computed.
+		if ( self::PRICING_MODE_PER_SEAT === $settings['pricing_mode'] ) {
+			$seat_item         = self::get_seat_line_item( $subscription );
+			$settings['limit'] = $seat_item ? (int) $seat_item->get_quantity() : 0;
+		}
+
+		if ( $name_meta ) {
+			$settings['name'] = $name_meta;
+		} else {
+			$product_name     = $product ? trim( (string) $product->get_name() ) : '';
+			$settings['name'] = '' !== $product_name ? $product_name : Group_Subscription::get_label( 'singular' );
+		}
+
+		/**
+		 * Filter the group subscription settings for a subscription.
+		 *
+		 * @param array $settings The group subscription settings.
+		 * @param WC_Subscription $subscription The subscription object.
+		 */
+		$settings = apply_filters( 'newspack_group_subscription_settings', $settings, $subscription );
+
+		$settings['limit'] = self::PRICING_MODE_PER_SEAT === $settings['pricing_mode']
+			? max( 1, (int) ( $settings['limit'] ?? 0 ) ) // Seats bought is exact capacity; a one-seat group is the owner alone.
+			: self::normalize_limit( $settings['limit'] ?? 0 );
+		return $settings;
+	}
+
+	/**
+	 * The line item whose quantity is the purchased seat count. Newspack's checkout
+	 * always produces single-item subscriptions, so this is the first product line.
+	 *
+	 * @param \WC_Subscription|int $subscription The subscription object or ID.
+	 *
+	 * @return \WC_Order_Item_Product|null
+	 */
+	public static function get_seat_line_item( $subscription ) {
+		$subscription = WooCommerce_Subscriptions::sanitize_subscription( $subscription );
+		if ( ! $subscription ) {
+			return null;
+		}
+		$first = null;
+		foreach ( $subscription->get_items() as $item ) {
+			if ( null === $first ) {
+				$first = $item;
+			}
+			// A subscription assembled by hand -- which is the surface the seat field
+			// lives on -- can carry more than one line, and rescaling the wrong one
+			// would move money on a product that sells no seats.
+			$product_id = $item->get_variation_id() ? $item->get_variation_id() : $item->get_product_id();
+			if ( $product_id && self::is_per_seat( $product_id ) ) {
+				return $item;
+			}
+		}
+		return $first;
+	}
+
+	/**
+	 * Whether a product or subscription bills per seat.
+	 *
+	 * @param \WC_Product|\WC_Subscription|int $object Product, subscription, or product ID.
+	 *
+	 * @return bool
+	 */
+	public static function is_per_seat( $object ) {
+		$settings = is_a( $object, 'WC_Subscription' )
+			? self::get_subscription_settings( $object )
+			: self::get_product_settings( $object );
+		return ! empty( $settings['enabled'] ) && self::PRICING_MODE_PER_SEAT === $settings['pricing_mode'];
+	}
+
+	/**
+	 * Change a per-seat group's seat count without charging for it.
+	 *
+	 * The owner-facing way to buy or drop seats is the WooCommerce Subscriptions
+	 * switch, which prices the change and takes payment. This is the support-side
+	 * correction -- a goodwill seat, a miscounted order -- so it rescales the
+	 * existing line item in place rather than raising an order. It keeps the floor
+	 * the switch guard applies: seats never fall below the people already in them.
+	 *
+	 * @param \WC_Subscription|int $subscription The subscription object or ID.
+	 * @param int                  $seats        The new seat count, including the owner.
+	 *
+	 * @return true|\WP_Error True on success, WP_Error when the change is refused.
+	 */
+	public static function set_seat_quantity( $subscription, $seats ) {
+		$subscription = WooCommerce_Subscriptions::sanitize_subscription( $subscription );
+		$item         = $subscription ? self::get_seat_line_item( $subscription ) : null;
+		if ( ! $item ) {
+			return new \WP_Error(
+				Group_Subscription_Seats::ERROR_CODE,
+				__( 'Subscription line item not found.', 'newspack-plugin' ),
+				[ 'status' => 400 ]
+			);
+		}
+		// A group is never smaller than its owner, so anything below one seat is a
+		// one-seat group rather than an error. The meta box can only submit a
+		// non-negative number, so this floor is for direct callers.
+		$seats     = max( 1, (int) $seats );
+		$occupancy = Group_Subscription_Seats::get_occupancy( $subscription );
+		if ( $seats < $occupancy ) {
+			return new \WP_Error(
+				Group_Subscription_Seats::ERROR_CODE,
+				sprintf(
+					/* translators: %d: seats in use. */
+					__( '%d seats are in use; remove members or invitations first.', 'newspack-plugin' ),
+					$occupancy
+				),
+				[ 'status' => 400 ]
+			);
+		}
+		// Rescale from the current unit price rather than the product's, so a
+		// discounted or hand-edited line keeps the price the customer agreed to.
+		$old_quantity  = max( 1, (int) $item->get_quantity() );
+		$unit_subtotal = (float) $item->get_subtotal() / $old_quantity;
+		$unit_total    = (float) $item->get_total() / $old_quantity;
+		// Round the rescaled totals -- not the unit price -- to the store's own
+		// precision, so a line that does not divide evenly (40 over 3 seats) stores
+		// 53.33 rather than 53.333333333333336.
+		$decimals = function_exists( 'wc_get_price_decimals' ) ? \wc_get_price_decimals() : 2;
+		$item->set_quantity( $seats );
+		$item->set_subtotal( round( $unit_subtotal * $seats, $decimals ) );
+		$item->set_total( round( $unit_total * $seats, $decimals ) );
+		$item->save();
+		// Rolls the line items up into the subscription total. Guarded because the
+		// subscription can be any object WCS hands back, and older versions did not
+		// always expose it.
+		if ( method_exists( $subscription, 'calculate_totals' ) ) {
+			$subscription->calculate_totals();
+		}
+		return true;
+	}
+
+	/**
+	 * Update group subscription settings for a subscription.
+	 *
+	 * @param WC_Subscription|int $subscription The subscription object or ID.
+	 * @param array               $settings The group subscription settings.
+	 */
+	public static function update_subscription_settings( $subscription, $settings ) {
+		$subscription = WooCommerce_Subscriptions::sanitize_subscription( $subscription );
+		if ( ! $subscription ) {
+			return;
+		}
+		$previous_settings = self::get_subscription_settings( $subscription );
+		$should_save       = false;
+		$changed_keys      = [];
+		foreach ( $settings as $key => $value ) {
+			if ( ! isset( self::DEFAULT_SETTINGS[ $key ] ) ) {
+				continue;
+			}
+			// Normalize both values to the same type before comparing to avoid
+			// false-positive changes (e.g. comparing 'yes' string to bool true).
+			$previous_value = $previous_settings[ $key ];
+			if ( is_bool( self::DEFAULT_SETTINGS[ $key ] ) ) {
+				$value          = \wc_bool_to_string( $value );
+				$previous_value = \wc_bool_to_string( $previous_value );
+			} elseif ( is_int( self::DEFAULT_SETTINGS[ $key ] ) ) {
+				$value = absint( $value );
+			}
+			if ( 'limit' === $key ) {
+				$value = self::normalize_limit( $value );
+			}
+			if ( $value !== $previous_value ) {
+				$subscription->update_meta_data( self::GROUP_SUBSCRIPTION_META_PREFIX . $key, $value );
+				$should_save    = true;
+				$changed_keys[] = $key;
+			}
+		}
+		if ( $should_save ) {
+			$subscription->save();
+
+			// Clear the cached group subscription IDs only when the enabled value actually changed.
+			if ( in_array( 'enabled', $changed_keys, true ) ) {
+				self::clear_group_subscription_ids_cache();
+			}
+		}
+	}
+
+	/**
+	 * Set the group name override on a subscription.
+	 *
+	 * Deliberately does NOT go through update_subscription_settings(), which dedupes against
+	 * the *resolved* name (custom → product name → label). That dedupe is right for the admin
+	 * meta box, whose field is pre-filled with the resolved name: a no-op save there must not
+	 * silently sever product inheritance. It is wrong for an explicit rename, whose field is
+	 * pre-filled with the raw override and shows the fallback only as a placeholder — so a
+	 * non-empty submit means "pin this name", even when it happens to equal what the group
+	 * currently inherits. Without pinning, a later product/label rename would silently rename
+	 * the reader's group underneath them.
+	 *
+	 * @param WC_Subscription|int $subscription The subscription object or ID.
+	 * @param string              $name         The custom name. An empty string clears the override.
+	 */
+	public static function update_subscription_name( $subscription, $name ) {
+		$subscription = WooCommerce_Subscriptions::sanitize_subscription( $subscription );
+		if ( ! $subscription ) {
+			return;
+		}
+		$meta_key = self::GROUP_SUBSCRIPTION_META_PREFIX . 'name';
+		// Compare against the raw override, not the resolved name, so only a genuine no-op skips the write.
+		if ( (string) $subscription->get_meta( $meta_key, true ) === $name ) {
+			return;
+		}
+		$subscription->update_meta_data( $meta_key, $name );
+		$subscription->save();
+	}
+
+	/**
+	 * Resolve a subscription from a metabox hook argument.
+	 *
+	 * WP core passes a WP_Post on the classic (CPT) order editor; WooCommerce passes the
+	 * order object under HPOS. A WP_Post is resolved by ID only when it is a
+	 * `shop_subscription`, so an unrelated post or product whose ID happens to coincide
+	 * with an HPOS subscription ID (the two live in separate ID spaces) is never mistaken
+	 * for a subscription.
+	 *
+	 * @param WP_Post|WC_Subscription|int $post_or_subscription The metabox subject.
+	 * @return WC_Subscription|false The subscription, or false if the argument is not one.
+	 */
+	private static function resolve_hook_subscription( $post_or_subscription ) {
+		if ( is_a( $post_or_subscription, 'WP_Post' ) ) {
+			if ( 'shop_subscription' !== $post_or_subscription->post_type ) {
+				return false;
+			}
+			$post_or_subscription = $post_or_subscription->ID;
+		} elseif ( is_object( $post_or_subscription ) && ! is_a( $post_or_subscription, 'WC_Subscription' ) ) {
+			// The add_meta_boxes hook fires on every admin edit screen, so under HPOS this can
+			// receive a non-subscription order object (e.g. WC_Order). Reject it explicitly
+			// rather than passing it to WCS.
+			return false;
+		}
+		return WooCommerce_Subscriptions::sanitize_subscription( $post_or_subscription );
+	}
+
+	/**
+	 * Add Group Subscription meta box to subscription admin pages.
+	 *
+	 * @param string                  $post_type The post type of the current post being edited.
+	 * @param WP_Post|WC_Subscription $post_or_subscription The post or subscription currently being edited.
+	 */
+	public static function add_group_subscription_meta_box( $post_type, $post_or_subscription ) {
+		if ( ! Content_Gate::is_newspack_feature_enabled() ) {
+			return;
+		}
+		// On the classic (non-HPOS) order editor WP core passes a WP_Post; under HPOS it
+		// passes the WC_Subscription object. Resolve either form so the metabox registers
+		// in both storage modes.
+		if ( ! self::resolve_hook_subscription( $post_or_subscription ) ) {
+			return;
+		}
+		\add_meta_box(
+			'newspack-group-subscription',
+			__( 'Group subscription', 'newspack-plugin' ),
+			[ __CLASS__, 'add_group_subscription_options' ],
+			$post_type,
+			'normal',
+			'high'
+		);
+	}
+
+	/**
+	 * Add Group Subscription options to subscription admin pages.
+	 *
+	 * @param WP_Post|WC_Subscription $subscription The post or subscription currently being edited.
+	 */
+	public static function add_group_subscription_options( $subscription ) {
+		if ( ! Content_Gate::is_newspack_feature_enabled() ) {
+			return;
+		}
+		// WP core passes the metabox callback a WP_Post (classic editor) or the
+		// WC_Subscription (HPOS); normalize to a subscription before rendering.
+		$subscription = self::resolve_hook_subscription( $subscription );
+		if ( ! $subscription ) {
+			return;
+		}
+		$settings = self::get_subscription_settings( $subscription );
+		$product  = \wc_get_product( WooCommerce_Subscriptions::get_subscription_product_id( $subscription ) );
+		$members   = array_map( 'intval', Group_Subscription::get_members( $subscription ) );
+		$managers  = array_map( 'intval', Group_Subscription::get_managers( $subscription ) );
+		$invites   = Group_Subscription_Invite::get_invites( $subscription );
+		$owner_id  = (int) $subscription->get_user_id();
+		// Resolve the rows once, applying the same guards used when rendering below, so the
+		// header count always matches the rendered list (and the admin JS, which re-tallies the
+		// list items on add/remove/invite). The owner is the only non-removable row. Promoted
+		// managers keep their member meta, so they render as removable member rows below, flagged
+		// so the row can show a "(manager)" label instead of being mislabelled as the owner.
+		$owner_user = $owner_id ? get_user_by( 'id', $owner_id ) : null;
+		$member_rows = [];
+		foreach ( $members as $member_id ) {
+			if ( $member_id === $owner_id ) {
+				continue;
+			}
+			$member_user = get_user_by( 'id', $member_id );
+			if ( $member_user ) {
+				$member_rows[] = [
+					'user'       => $member_user,
+					'is_manager' => in_array( $member_id, $managers, true ),
+				];
+			}
+		}
+		// A spot is consumed by each group member and each pending (non-expired) invite. The
+		// threshold is the member-seat limit, not the owner-inclusive configured limit: $members
+		// comes from get_members(), which returns member-meta holders and so excludes the owner,
+		// and get_member_seat_limit() reserves the seat of every manager who holds no member meta
+		// (in practice the owner). That is the exact expression the server enforces in
+		// Group_Subscription::update_members() and Group_Subscription_Invite::generate_invite(),
+		// and the one the reader-facing My Account view computes
+		// (my-account/templates/v1/group-subscription-members.php), so the admin is never shown an
+		// add form the server would then reject with a 409. A null seat limit means unlimited. The
+		// admin JS re-evaluates on add/remove/invite/cancel to keep the form and notice in sync.
+		$seat_limit      = Group_Subscription::get_member_seat_limit( $subscription );
+		$pending_invites = Group_Subscription_Invite::get_invites( $subscription, false );
+		$is_at_limit     = null !== $seat_limit && ( count( $members ) + count( $pending_invites ) ) >= $seat_limit;
+		// Members in the raw set but not rendered as their own spot-marked row (the owner,
+		// skipped above, plus any member whose get_user_by() returned null because the user
+		// was deleted out-of-band) still consume a spot; the JS adds this offset to its
+		// rendered-row tally so its live count matches this server-side one.
+		$spots_offset = count( $members ) - count( $member_rows );
+		?>
+		<div class="newspack-group-subscription__container<?php echo $is_at_limit ? ' is-at-limit' : ''; ?>" data-subscription-id="<?php echo \esc_attr( $subscription->get_id() ); ?>" data-member-limit="<?php echo \esc_attr( null === $seat_limit ? '' : (string) $seat_limit ); ?>" data-spots-offset="<?php echo \esc_attr( (string) $spots_offset ); ?>">
+			<input type="hidden" name="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled_baseline' ); ?>" value="<?php echo \esc_attr( \wc_bool_to_string( $settings['enabled'] ) ); ?>" />
+			<input type="hidden" name="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'name_baseline' ); ?>" value="<?php echo \esc_attr( $settings['name'] ); ?>" />
+			<div class="newspack-group-subscription__settings">
+				<h3><?php \esc_html_e( 'Settings', 'newspack-plugin' ); ?></h3>
+				<p>
+					<em>
+					<?php
+					echo wp_kses_post(
+						sprintf(
+							/* translators: %s: The product edit link or 'the product' if no product is found. */
+							__( 'Changing these settings will override settings inherited from %s.', 'newspack-plugin' ),
+							$product ? '<a href="' . \admin_url( 'post.php?post=' . ( $product->get_parent_id() ?: $product->get_id() ) . '&action=edit' ) . '">' . $product->get_name() . '</a>' : __( 'the product', 'newspack-plugin' ) // phpcs:ignore Universal.Operators.DisallowShortTernary.Found
+						)
+					);
+					?>
+					</em>
+				</p>
+				<p>
+					<label for="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled' ); ?>">
+						<input
+							type="checkbox"
+							id="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled' ); ?>"
+							name="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled' ); ?>"
+							value="yes"
+							<?php checked( $settings['enabled'], true ); ?>
+						/>
+						<?php \esc_html_e( 'Group subscription enabled', 'newspack-plugin' ); ?>
+					</label>
+				</p>
+				<div class="form-row">
+					<?php
+					\woocommerce_wp_text_input(
+						[
+							'id'            => self::GROUP_SUBSCRIPTION_META_PREFIX . 'name',
+							'name'          => self::GROUP_SUBSCRIPTION_META_PREFIX . 'name',
+							'label'         => __( 'Group subscription name', 'newspack-plugin' ),
+							'value'         => $settings['name'],
+							'type'          => 'text',
+							'wrapper_class' => 'show_if_newspack_group_subscription_enabled',
+						]
+					);
+					?>
+				</div>
+				<div class="form-row">
+					<?php
+					if ( self::is_per_seat( $subscription ) ) {
+						// Capacity in per-seat mode is the purchased seat count, so there is no
+						// limit to override: the admin edits the seat count itself. The min is
+						// only a browser hint; set_seat_quantity() is what refuses a cut below
+						// occupancy.
+						$occupied_seats = Group_Subscription_Seats::get_occupancy( $subscription );
+						\woocommerce_wp_text_input(
+							[
+								'id'                => self::GROUP_SUBSCRIPTION_META_PREFIX . 'seats',
+								'name'              => self::GROUP_SUBSCRIPTION_META_PREFIX . 'seats',
+								'label'             => __( 'Seats (including owner)', 'newspack-plugin' ),
+								'desc_tip'          => true,
+								'description'       => __( 'The number of seats this group has bought. Changing it here resizes the subscription without charging or refunding the customer.', 'newspack-plugin' ),
+								'value'             => (int) $settings['limit'],
+								'type'              => 'number',
+								'wrapper_class'     => 'show_if_newspack_group_subscription_enabled',
+								'custom_attributes' => [
+									'step' => 1,
+									'min'  => max( 1, $occupied_seats ),
+								],
+							]
+						);
+						?>
+						<input type="hidden" name="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'seats_baseline' ); ?>" value="<?php echo \esc_attr( (int) $settings['limit'] ); ?>" />
+						<?php
+					} else {
+						$pricing_options = self::add_custom_product_pricing_options( [] );
+						foreach ( $pricing_options as $option_key => $option_config ) {
+							if ( $option_key === 'newspack_group_subscription_limit' ) {
+								$option_config['value'] = $settings['limit'];
+								\woocommerce_wp_text_input( $option_config );
+								break;
+							}
+						}
+						?>
+						<input type="hidden" name="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'limit_baseline' ); ?>" value="<?php echo \esc_attr( (int) $settings['limit'] ); ?>" />
+						<?php
+					}
+					?>
+				</div>
+			</div>
+			<div class="newspack-group-subscription__members show_if_newspack_group_subscription_enabled" >
+				<h3>
+					<?php
+					echo wp_kses_post(
+						sprintf(
+							// translators: %d: The number of group members.
+							__( 'Group members (<span class="newspack-group-subscription__members-count">%d</span>)', 'newspack-plugin' ),
+							// Count exactly the rows rendered below (owner + reader-members + invites)
+							// so the header never drifts from the list.
+							( $owner_user ? 1 : 0 ) + count( $member_rows ) + count( $invites )
+						)
+					);
+					?>
+				</h3>
+				<ul class="newspack-group-subscription__members-list">
+					<?php
+					// The owner counts as a member of the group and is rendered first as a
+					// non-removable row. The JS keeps the count in sync by tallying list items.
+					if ( $owner_user ) :
+						?>
+						<li>
+							<a class="newspack-group-subscription__member-user-link" href="<?php echo \esc_url( \get_edit_user_link( $owner_user->ID ) ); ?>"><?php echo \esc_html( $owner_user->user_email ); ?></a>
+							<span class="newspack-group-subscription__member-role"><?php \esc_html_e( '(owner)', 'newspack-plugin' ); ?></span>
+						</li>
+						<?php
+					endif;
+					// Members and promoted managers are removable rows; a manager row carries a
+					// "(manager)" label so it isn't confused with a plain member or the owner.
+					foreach ( $member_rows as $member_row ) :
+						$user = $member_row['user'];
+						?>
+						<li data-consumes-spot="1">
+							<a class="newspack-group-subscription__member-user-link" href="<?php echo \esc_url( \get_edit_user_link( $user->ID ) ); ?>"><?php echo \esc_html( $user->user_email ); ?></a>
+							<?php if ( $member_row['is_manager'] ) : ?>
+								<span class="newspack-group-subscription__member-role"><?php \esc_html_e( '(manager)', 'newspack-plugin' ); ?></span>
+							<?php endif; ?>
+							<a title="<?php \esc_attr_e( 'Remove', 'newspack-plugin' ); ?>" href="#" class="newspack-group-subscription__remove-member" data-user-id="<?php echo \esc_attr( $user->ID ); ?>">
+								&#215;
+								<span class="screen-reader-text"><?php \esc_html_e( 'Remove', 'newspack-plugin' ); ?></span>
+						</a>
+						</li>
+						<?php
+					endforeach;
+					foreach ( array_values( $invites ) as $invite ) :
+						$is_expired = Group_Subscription_Invite::is_invite_expired( $invite );
+						?>
+						<li data-email="<?php echo \esc_attr( $invite['email'] ); ?>"<?php echo $is_expired ? '' : ' data-consumes-spot="1"'; ?>>
+							<span class="newspack-group-subscription__pending-invite"><?php echo \esc_html( $invite['email'] ); ?></span> <span class="newspack-group-subscription__pending-invite-label"><?php echo \esc_html( $is_expired ? __( '(expired)', 'newspack-plugin' ) : __( '(pending)', 'newspack-plugin' ) ); ?></span>
+							<a title="<?php \esc_attr_e( 'Cancel', 'newspack-plugin' ); ?>" href="#" class="newspack-group-subscription__cancel-invite">
+								&#215;
+								<span class="screen-reader-text"><?php \esc_html_e( 'Cancel', 'newspack-plugin' ); ?></span>
+						</a>
+						</li>
+						<?php
+					endforeach;
+					?>
+				</ul>
+			</div>
+			<?php
+			// The live region is always present and never display:none — an element hidden that way
+			// is out of the accessibility tree, so it would not announce when the JS reveals it.
+			// The notice itself is added and removed inside it (server-side here, by the admin JS on
+			// live transitions), which is the content change screen readers actually announce.
+			?>
+			<div class="newspack-group-subscription__limit-notice show_if_newspack_group_subscription_enabled" role="status">
+				<?php if ( $is_at_limit ) : ?>
+					<div class="notice notice-warning inline"><p><?php echo \esc_html( self::get_limit_notice_text() ); ?></p></div>
+				<?php endif; ?>
+			</div>
+			<?php
+			// The add-member form is hidden with the `hidden` attribute rather than by a stylesheet
+			// rule, so the initial state is right even if the CSS fails to load; the JS toggles the
+			// same attribute on add/remove/invite/cancel. update_members() remains the authority.
+			?>
+			<div class="newspack-group-subscription__add-member show_if_newspack_group_subscription_enabled form-row"<?php echo $is_at_limit ? ' hidden' : ''; ?>>
+				<h3><?php \esc_html_e( 'Add new group members', 'newspack-plugin' ); ?></h3>
+				<select id="_newspack_group_subscription_member_ids" name="_newspack_group_subscription_member_ids[]">
+					<option value="">
+						<?php \esc_html_e( 'Select a reader...', 'newspack-plugin' ); ?>
+					</option>
+				</select>
+				<div class="newspack-group-subscription__invite-member">
+					<label for="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'invite_email' ); ?>"><?php \esc_html_e( 'Or, send an invitation to a new reader:', 'newspack-plugin' ); ?></label>
+					<input type="email" name="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'invite_email' ); ?>" id="<?php echo \esc_attr( self::GROUP_SUBSCRIPTION_META_PREFIX . 'invite_email' ); ?>" placeholder="<?php \esc_attr_e( 'Email address', 'newspack-plugin' ); ?>" />
+					<button type="submit" class="button button-primary"><?php \esc_html_e( 'Invite', 'newspack-plugin' ); ?></button>
+				</div>
+			</div>
+		</div>
+						<?php
+	}
+
+	/**
+	 * Save Group Subscription meta to a subscription.
+	 *
+	 * @param int             $subscription_id Subscription ID.
+	 * @param WC_Subscription $subscription Optional. Subscription object. Default null - will be loaded from the ID.
+	 */
+	public static function save_group_subscription_meta( $subscription_id, $subscription = null ) {
+		if ( ! function_exists( 'wcs_is_subscription' ) || ! function_exists( 'wcs_get_subscription' ) || ! function_exists( 'wc_clean' ) || ! \wcs_is_subscription( $subscription_id ) ) {
+			return;
+		}
+
+		// Verify save nonce. See: WCS_Meta_Box_Subscription_Data::save().
+		if ( empty( $_POST['woocommerce_meta_nonce'] ) || ! \wp_verify_nonce( \wc_clean( \wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			return;
+		}
+
+		// Get subscription object.
+		$subscription = is_a( $subscription, 'WC_Subscription' ) ? $subscription : \wcs_get_subscription( $subscription_id );
+		$prefix       = self::GROUP_SUBSCRIPTION_META_PREFIX;
+
+		$submitted = [
+			'enabled' => isset( $_POST[ $prefix . 'enabled' ] ),
+			'limit'   => isset( $_POST[ $prefix . 'limit' ] )
+				? absint( wp_unslash( $_POST[ $prefix . 'limit' ] ) )
+				: 0,
+			'name'    => isset( $_POST[ $prefix . 'name' ] )
+				? sanitize_text_field( wp_unslash( $_POST[ $prefix . 'name' ] ) )
+				: '',
+		];
+
+		$changed = [];
+		foreach ( [ 'enabled', 'limit', 'name' ] as $key ) {
+			$baseline_field = $prefix . $key . '_baseline';
+			if ( ! isset( $_POST[ $baseline_field ] ) ) {
+				continue;
+			}
+			$baseline_raw = sanitize_text_field( wp_unslash( $_POST[ $baseline_field ] ) );
+			switch ( $key ) {
+				case 'enabled':
+					$baseline_value = \wc_string_to_bool( $baseline_raw );
+					break;
+				case 'limit':
+					$baseline_value = absint( $baseline_raw );
+					break;
+				default:
+					$baseline_value = $baseline_raw;
+					break;
+			}
+			if ( $submitted[ $key ] !== $baseline_value ) {
+				$changed[ $key ] = $submitted[ $key ];
+			}
+		}
+
+		if ( ! empty( $changed ) ) {
+			self::update_subscription_settings( $subscription, $changed );
+		}
+
+		// Effective group status can flip via inherited product settings without a meta write; refresh the cached ID set when it changed.
+		// On the Add-subscription screen the product line item may not be linked yet, so this read can resolve the un-inherited
+		// default and leave the cached ID set briefly stale. That is harmless: it only drives the admin list-table group filter and
+		// self-heals via the transient's TTL plus the product save/trash/delete clear hooks. It is never an access-control path.
+		if ( isset( $_POST[ $prefix . 'enabled_baseline' ] ) ) {
+			$baseline_enabled = \wc_string_to_bool( sanitize_text_field( wp_unslash( $_POST[ $prefix . 'enabled_baseline' ] ) ) );
+			if ( $baseline_enabled !== self::get_subscription_settings( $subscription )['enabled'] ) {
+				self::clear_group_subscription_ids_cache();
+			}
+		}
+	}
+
+	/**
+	 * Apply an admin seat-count change from the meta box.
+	 *
+	 * Priority 20 is load-bearing, and a separate callback from
+	 * save_group_subscription_meta() at 10 for that reason. WooCommerce saves the
+	 * order line items on this same hook at priority 10
+	 * (`WC_Meta_Box_Order_Items::save`), and `wc_save_order_items()` rewrites every
+	 * item's quantity, subtotal and total from the POST -- on every save of the
+	 * subscription edit screen, whether or not the admin opened the line items
+	 * panel. A rescale at 10 would be reverted moments later with no error. 20 is
+	 * still ahead of `WC_Meta_Box_Order_Downloads::save` (30) and
+	 * `WC_Meta_Box_Order_Data::save` (40). Do not lower it.
+	 *
+	 * Running second means the line item we hold may be a handle taken before
+	 * WooCommerce wrote to it, so the rescale is re-based on the POST first --
+	 * see sync_seat_line_item_from_post().
+	 *
+	 * @param int              $subscription_id Subscription ID.
+	 * @param \WC_Subscription $subscription    Optional. Subscription object. Default null - will be loaded from the ID.
+	 */
+	public static function save_group_subscription_seats( $subscription_id, $subscription = null ) {
+		if ( ! function_exists( 'wcs_is_subscription' ) || ! function_exists( 'wcs_get_subscription' ) || ! function_exists( 'wc_clean' ) || ! \wcs_is_subscription( $subscription_id ) ) {
+			return;
+		}
+
+		// Same nonce as the settings save: both handle one submit of the same screen.
+		// See: WCS_Meta_Box_Subscription_Data::save().
+		if ( empty( $_POST['woocommerce_meta_nonce'] ) || ! \wp_verify_nonce( \wc_clean( \wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			return;
+		}
+
+		$prefix = self::GROUP_SUBSCRIPTION_META_PREFIX;
+
+		// A per-seat group renders the seat count in place of the limit field, and its
+		// capacity lives on the line item rather than in meta, so an edit rescales the
+		// subscription instead of writing an override.
+		if ( ! isset( $_POST[ $prefix . 'seats' ], $_POST[ $prefix . 'seats_baseline' ] ) ) {
+			return;
+		}
+		$submitted_seats = absint( wp_unslash( $_POST[ $prefix . 'seats' ] ) );
+		$baseline_seats  = absint( wp_unslash( $_POST[ $prefix . 'seats_baseline' ] ) );
+		if ( $submitted_seats === $baseline_seats ) {
+			return;
+		}
+
+		$subscription = is_a( $subscription, 'WC_Subscription' ) ? $subscription : \wcs_get_subscription( $subscription_id );
+		// The seat fields are only ever rendered for a per-seat group, so their
+		// presence on anything else is a request that did not come from this meta
+		// box. Rescaling on it would resize an unrelated subscription's line item.
+		if ( ! self::is_per_seat( $subscription ) ) {
+			return;
+		}
+		self::sync_seat_line_item_from_post( $subscription );
+		$seat_result = self::set_seat_quantity( $subscription, $submitted_seats );
+		// WooCommerce collects meta-box errors here and prints them on the next screen
+		// load; without it a refused change springs back with no explanation. Guarded
+		// because this class also runs outside wp-admin.
+		if ( is_wp_error( $seat_result ) && class_exists( '\WC_Admin_Meta_Boxes' ) ) {
+			\WC_Admin_Meta_Boxes::add_error( $seat_result->get_error_message() );
+		}
+	}
+
+	/**
+	 * Re-base the seat line item on what WooCommerce just wrote from this same POST.
+	 *
+	 * The rescale divides the line's existing money by its existing quantity to get a
+	 * unit price, so it has to start from current numbers. `wc_save_order_items()`
+	 * wrote the line item at priority 10 through its own freshly loaded copy, so the
+	 * handle this callback holds can still carry pre-write values -- and dividing
+	 * stale money by a stale quantity yields the wrong unit price silently.
+	 *
+	 * So the POST is the base, not the object. These are the same three keys
+	 * `wc_save_order_items()` reads (`wc-admin-functions.php`), and the values go to
+	 * the same setters raw: `set_subtotal()`/`set_total()` run `wc_format_decimal()`
+	 * themselves, which is what parses the localised price the items table submits
+	 * ("1.234,56").
+	 *
+	 * Fields absent -- any context that is not the order items editor -- leaves the
+	 * object as the base.
+	 *
+	 * @param \WC_Subscription $subscription The subscription being saved.
+	 */
+	private static function sync_seat_line_item_from_post( $subscription ) {
+		$item    = self::get_seat_line_item( $subscription );
+		$item_id = $item ? (int) $item->get_id() : 0;
+		if ( ! $item_id ) {
+			return;
+		}
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- The only caller verifies woocommerce_meta_nonce before reaching here.
+		// Scalars only: sanitize_text_field() answers '' for an array, which would set
+		// the quantity to zero and make the rescale read the whole line as one seat's
+		// price. WooCommerce's own items table posts scalars.
+		if ( isset( $_POST['order_item_qty'][ $item_id ] ) && is_scalar( $_POST['order_item_qty'][ $item_id ] ) ) {
+			$item->set_quantity( sanitize_text_field( wp_unslash( $_POST['order_item_qty'][ $item_id ] ) ) );
+		}
+		if ( isset( $_POST['line_subtotal'][ $item_id ] ) && is_scalar( $_POST['line_subtotal'][ $item_id ] ) ) {
+			$item->set_subtotal( sanitize_text_field( wp_unslash( $_POST['line_subtotal'][ $item_id ] ) ) );
+		}
+		if ( isset( $_POST['line_total'][ $item_id ] ) && is_scalar( $_POST['line_total'][ $item_id ] ) ) {
+			$item->set_total( sanitize_text_field( wp_unslash( $_POST['line_total'][ $item_id ] ) ) );
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+	}
+
+	/**
+	 * Add a group subscription filter dropdown to the subscription list table.
+	 *
+	 * @param string $order_type The order type (post type or HPOS order type).
+	 */
+	public static function add_group_subscription_filter( $order_type = '' ) {
+		if ( '' === $order_type ) {
+			$order_type = isset( $GLOBALS['typenow'] ) ? $GLOBALS['typenow'] : '';
+		}
+
+		if ( 'shop_subscription' !== $order_type ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$selected = isset( $_GET['_newspack_group_subscription'] ) ? \sanitize_text_field( \wp_unslash( $_GET['_newspack_group_subscription'] ) ) : '';
+
+		?>
+		<label class="screen-reader-text" for="_newspack_group_subscription"><?php \esc_html_e( 'Filter by group subscription status', 'newspack-plugin' ); ?></label>
+		<select name="_newspack_group_subscription" id="_newspack_group_subscription">
+			<option value=""><?php \esc_html_e( 'All subscriptions', 'newspack-plugin' ); ?></option>
+			<option value="group" <?php selected( $selected, 'group' ); ?>><?php \esc_html_e( 'Group subscriptions', 'newspack-plugin' ); ?></option>
+			<option value="non-group" <?php selected( $selected, 'non-group' ); ?>><?php \esc_html_e( 'Non-group subscriptions', 'newspack-plugin' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Add the group subscription name meta key to the subscription search fields.
+	 *
+	 * @param array $search_fields The search fields.
+	 *
+	 * @return array The search fields with the group name meta key added.
+	 */
+	public static function add_group_name_search_field( $search_fields ) {
+		$search_fields[] = self::GROUP_SUBSCRIPTION_META_PREFIX . 'name';
+		return $search_fields;
+	}
+
+	/**
+	 * Add the group subscription name meta key to the HPOS order search meta keys.
+	 *
+	 * This filter fires for all order types, so we guard it to only apply
+	 * on the subscription admin list table screen.
+	 *
+	 * @param array $meta_keys The meta keys to search.
+	 *
+	 * @return array The meta keys with the group name meta key added.
+	 */
+	public static function add_group_name_hpos_search_field( $meta_keys ) {
+		if ( ! function_exists( 'get_current_screen' ) || ! function_exists( 'wcs_get_page_screen_id' ) ) {
+			return $meta_keys;
+		}
+		$screen = \get_current_screen();
+		if ( ! $screen || $screen->id !== \wcs_get_page_screen_id( 'shop_subscription' ) ) {
+			return $meta_keys;
+		}
+		$meta_keys[] = self::GROUP_SUBSCRIPTION_META_PREFIX . 'name';
+		return $meta_keys;
+	}
+
+	/**
+	 * Join the postmeta table for group name search in WP_Query.
+	 *
+	 * @param string    $join  The JOIN clause.
+	 * @param \WP_Query $query The WP_Query instance.
+	 *
+	 * @return string The modified JOIN clause.
+	 */
+	public static function search_group_name_join( $join, $query ) {
+		global $wpdb;
+		if ( ! self::is_subscription_search_query( $query ) ) {
+			return $join;
+		}
+		$join .= " LEFT JOIN {$wpdb->postmeta} AS np_group_name ON ( {$wpdb->posts}.ID = np_group_name.post_id AND np_group_name.meta_key = '" . esc_sql( self::GROUP_SUBSCRIPTION_META_PREFIX . 'name' ) . "' ) ";
+		return $join;
+	}
+
+	/**
+	 * Extend the search WHERE clause to include group name meta in WP_Query.
+	 *
+	 * @param string    $search The search WHERE clause.
+	 * @param \WP_Query $query  The WP_Query instance.
+	 *
+	 * @return string The modified search WHERE clause.
+	 */
+	public static function search_group_name_where( $search, $query ) {
+		global $wpdb;
+		if ( ! self::is_subscription_search_query( $query ) || empty( $search ) ) {
+			return $search;
+		}
+		$term = $query->get( 's' );
+		if ( empty( $term ) ) {
+			return $search;
+		}
+		$like      = '%' . $wpdb->esc_like( $term ) . '%';
+		$or_clause = $wpdb->prepare( '( np_group_name.meta_value LIKE %s )', $like );
+
+		// Wrap the existing search clause in an outer OR with our group name match.
+		// $search is in the form " AND (...)" — preserve the leading " AND " and
+		// wrap whatever inner clause WP_Query produced. Robust against `exact`,
+		// `sentence`, multi-term, and other plugins' posts_search filters that
+		// may have already modified the inner shape.
+		$inner  = preg_replace( '/^\s*AND\s+/', '', $search );
+		$search = " AND ( {$inner} OR {$or_clause} ) ";
+
+		return $search;
+	}
+
+	/**
+	 * Check if a WP_Query is a search query for shop_subscription post type.
+	 *
+	 * @param \WP_Query $query The WP_Query instance.
+	 *
+	 * @return bool Whether this is a subscription search query.
+	 */
+	private static function is_subscription_search_query( $query ) {
+		return $query->is_search() && 'shop_subscription' === $query->get( 'post_type' );
+	}
+
+	/**
+	 * Transient key for caching group subscription IDs.
+	 */
+	const GROUP_SUBSCRIPTION_IDS_TRANSIENT = 'newspack_group_subscription_ids';
+
+	/**
+	 * Get all subscription IDs that are group subscriptions.
+	 *
+	 * Collects IDs from two sources:
+	 * 1. Subscriptions with the group enabled meta set directly.
+	 * 2. Subscriptions whose product has group subscriptions enabled (inheritance).
+	 *
+	 * Results are cached in a transient for 5 minutes.
+	 *
+	 * @return int[] Array of subscription IDs.
+	 */
+	public static function get_group_subscription_ids() {
+		$cached = \get_transient( self::GROUP_SUBSCRIPTION_IDS_TRANSIENT );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$meta_key = self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled';
+
+		// 1. Subscription IDs with group enabled meta set directly.
+		// Uses wcs_get_subscriptions which properly handles meta_query in both
+		// CPT and HPOS modes (via wcs_get_orders_with_meta_query internally).
+		$enabled_ids = [];
+		if ( function_exists( 'wcs_get_subscriptions' ) ) {
+			$enabled_ids = array_keys(
+				\wcs_get_subscriptions(
+					[
+						'subscriptions_per_page' => -1,
+						'subscription_status'    => 'any',
+						'meta_query'             => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+							[
+								'key'   => $meta_key,
+								'value' => 'yes',
+							],
+						],
+					]
+				)
+			);
+		}
+
+		// 2. Subscription IDs whose product has group subscriptions enabled.
+		$product_ids = \get_posts( // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts
+			[
+				'post_type'      => [ 'product', 'product_variation' ],
+				'posts_per_page' => -1, // phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page, WordPressVIPMinimum.Performance.NoPaging -- Group-subscription-enabled products only; small meta-filtered set.
+				'fields'         => 'ids',
+				'meta_key'       => $meta_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'     => 'yes', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			]
+		);
+
+		$product_sub_ids = [];
+		if ( ! empty( $product_ids ) && function_exists( 'wcs_get_subscriptions_for_product' ) && function_exists( 'wc_get_product' ) ) {
+			foreach ( $product_ids as $product_id ) {
+				$product = \wc_get_product( $product_id );
+				if ( ! $product ) {
+					continue;
+				}
+				// Skip variable parent products: variations have their own group settings
+				// and do not inherit from the parent.
+				if ( $product->is_type( [ 'variable', 'variable-subscription' ] ) ) {
+					continue;
+				}
+				$product_sub_ids = array_merge(
+					$product_sub_ids,
+					array_keys( \wcs_get_subscriptions_for_product( $product_id ) )
+				);
+			}
+		}
+
+		// 3. Remove subscriptions that explicitly opted out via an 'enabled = no' override.
+		// A subscription's own meta takes precedence over product inheritance.
+		$opted_out_ids = [];
+		if ( ! empty( $product_sub_ids ) && function_exists( 'wcs_get_subscriptions' ) ) {
+			$opted_out_ids = array_keys(
+				\wcs_get_subscriptions(
+					[
+						'subscriptions_per_page' => -1,
+						'subscription_status'    => 'any',
+						'meta_query'             => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+							[
+								'key'   => $meta_key,
+								'value' => 'no',
+							],
+						],
+					]
+				)
+			);
+		}
+
+		$product_sub_ids = array_diff( $product_sub_ids, $opted_out_ids );
+
+		$result = array_values( array_unique( array_merge( $enabled_ids, $product_sub_ids ) ) );
+
+		\set_transient( self::GROUP_SUBSCRIPTION_IDS_TRANSIENT, $result, 5 * MINUTE_IN_SECONDS );
+
+		return $result;
+	}
+
+	/**
+	 * Clear the group subscription IDs transient cache.
+	 *
+	 * Called when group subscription settings change to ensure the filter
+	 * reflects current state.
+	 */
+	public static function clear_group_subscription_ids_cache() {
+		\delete_transient( self::GROUP_SUBSCRIPTION_IDS_TRANSIENT );
+	}
+
+	/**
+	 * Clear the group subscription IDs cache when a product's group settings
+	 * may have changed.
+	 *
+	 * @param int $product_id The product ID being saved.
+	 */
+	public static function maybe_clear_cache_on_product_save( $product_id ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( isset( $_POST[ self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled' ] ) || \get_post_meta( $product_id, self::GROUP_SUBSCRIPTION_META_PREFIX . 'enabled', true ) ) {
+			self::clear_group_subscription_ids_cache();
+		}
+	}
+
+	/**
+	 * Clear the group subscription IDs cache when a subscription is trashed
+	 * or permanently deleted (CPT mode).
+	 *
+	 * @param int $post_id The post ID being trashed/deleted.
+	 */
+	public static function maybe_clear_cache_on_subscription_delete( $post_id ) {
+		if ( 'shop_subscription' === \get_post_type( $post_id ) ) {
+			self::clear_group_subscription_ids_cache();
+		}
+	}
+
+	/**
+	 * Filter the subscription list table query by group subscription status (HPOS).
+	 *
+	 * @param array $query_args The query args for the list table.
+	 *
+	 * @return array The filtered query args.
+	 */
+	public static function filter_subscriptions_by_group( $query_args ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['_newspack_group_subscription'] ) ) {
+			return $query_args;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$filter = \sanitize_text_field( \wp_unslash( $_GET['_newspack_group_subscription'] ) );
+		if ( ! in_array( $filter, [ 'group', 'non-group' ], true ) ) {
+			return $query_args;
+		}
+
+		return self::apply_group_filter( $query_args, $filter, self::get_group_subscription_ids() );
+	}
+
+	/**
+	 * Filter the subscription list by group subscription status (CPT mode).
+	 *
+	 * Uses the 'request' filter, which is the same approach WCS uses for its
+	 * own product/customer/payment method filters on edit.php.
+	 *
+	 * @param array $query_vars The query vars for the admin list table request.
+	 *
+	 * @return array The filtered query vars.
+	 */
+	public static function filter_subscriptions_by_group_cpt( $query_vars ) {
+		global $typenow;
+
+		if ( ! is_admin() || 'shop_subscription' !== $typenow ) {
+			return $query_vars;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['_newspack_group_subscription'] ) ) {
+			return $query_vars;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$filter = \sanitize_text_field( \wp_unslash( $_GET['_newspack_group_subscription'] ) );
+		if ( ! in_array( $filter, [ 'group', 'non-group' ], true ) ) {
+			return $query_vars;
+		}
+
+		return self::apply_group_filter( $query_vars, $filter, self::get_group_subscription_ids() );
+	}
+
+	/**
+	 * Apply the group subscription filter to a set of query args by mutating
+	 * post__in / post__not_in. Shared by the HPOS and CPT filter callbacks,
+	 * and by the subscriptions CSV exporter (Subscriptions_CSV_Exporter).
+	 *
+	 * @param array  $args      The query args (HPOS) or query vars (CPT).
+	 * @param string $filter    Either 'group' or 'non-group'.
+	 * @param int[]  $group_ids The pre-collected group subscription IDs.
+	 *
+	 * @return array The mutated args.
+	 */
+	public static function apply_group_filter( $args, $filter, $group_ids ) {
+		if ( 'group' === $filter ) {
+			if ( empty( $group_ids ) ) {
+				$args['post__in'] = [ 0 ];
+			} elseif ( ! isset( $args['post__in'] ) ) {
+				$args['post__in'] = $group_ids;
+			} else {
+				$intersected      = array_intersect( $args['post__in'], $group_ids );
+				$args['post__in'] = empty( $intersected ) ? [ 0 ] : array_values( $intersected );
+			}
+		} elseif ( 'non-group' === $filter ) {
+			if ( ! empty( $group_ids ) ) {
+				$args['post__not_in'] = isset( $args['post__not_in'] ) // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+					? array_merge( $args['post__not_in'], $group_ids )
+					: $group_ids;
+			}
+		}
+
+		return $args;
+	}
+
+	/**
+	 * Register the publisher-configurable group label settings.
+	 */
+	public static function register_label_settings() {
+		if ( ! Content_Gate::is_newspack_feature_enabled() ) {
+			return;
+		}
+		// Group name is unused (no settings_fields() form); registers sanitize_callback via update_option().
+		foreach ( [ 'singular', 'plural' ] as $variant ) {
+			\register_setting(
+				'newspack_group_subscription',
+				Group_Subscription::get_label_option_key( $variant ),
+				[
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+					'default'           => '',
+					'show_in_rest'      => false,
+				]
+			);
+		}
+	}
+}
+Group_Subscription_Settings::init();

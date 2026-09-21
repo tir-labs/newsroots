@@ -1,0 +1,1 @@
+(()=>{"use strict";const o=window.wp.data,e=window.wp.hooks;(0,o.register)((0,o.createReduxStore)("co-authors-plus/blocks",{reducer:(o=window.coAuthorsBlocks)=>o,selectors:{getAuthorPlaceholder:o=>(0,e.applyFilters)("co-authors-plus.author-placeholder",o.authorPlaceholder)}}))})();

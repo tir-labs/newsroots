@@ -1,0 +1,1 @@
+// Shipping removed in NewsWoo

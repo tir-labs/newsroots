@@ -1,0 +1,143 @@
+body {
+    background:#F1F1F1;
+}
+.gogold-container {
+    font-family: -apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size: 1rem;
+}
+.gogold-container h2 {
+    font-size: 1.5rem;
+}
+/*.gogold-container:before {
+    content: '';
+    position: fixed;
+    width: 160px;
+    background: black;
+    left: 0;
+    height: 100%;
+    top: 0;
+}*/
+.gogold-intro {
+    padding: 1rem 0 2rem;
+    display: flex;
+    justify-content: space-between;
+}
+.gogold-intro-features {
+    flex-basis: 50%;
+}
+.gopro-intro-pda {
+    flex-basis: 50%;
+}
+.gopro-intro-pda h3 {
+    font-size: 1.1rem;
+    color: white;
+}
+.gogold-intro ul {
+    padding-left: 0;
+}
+.gogold-intro ul li {
+    margin-bottom: 0.5rem;
+    list-style-type: none;
+}
+
+.reviews-container h2 {
+    text-align: center;
+}
+.review-box {
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1), 0 0 0 1px rgba(10, 10, 10, 0.1);
+    padding: 1.25rem;
+    width: 33.3%;
+    margin: 0 0.8rem 1.6rem;
+    text-align: center;
+}
+.review-box.pda {
+    width: 480px;
+    margin: 3rem auto 2rem;
+    color: white;
+    background: linear-gradient(to right, #28cf62 0%, #0cd352 100%);
+    transform: skewY(-1.2deg);
+}
+.review-box.pda .five-stars {
+    color: #feff00;
+}
+/* .review-media, */
+.review-row {
+    display: flex;
+    margin: 5.5rem 0 -2rem -0.8rem;
+}
+.review-row h3 {
+    margin-top: 3.5rem;
+}
+.review-box img {
+    margin: -4rem auto 0;
+    display: inline-block;
+    height: auto;
+    width: 90px;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    padding: 0.1rem;
+}
+.review-box.pda img {
+    width: 100px;
+    border: 1px solid #2cd87d;
+}
+.review-box h3 {
+    margin: 0 0 0.2rem;
+    line-height: 1.2;
+    font-size: 1.15rem;
+}
+.review-media.row small {
+    display: block;
+    margin-bottom: 1rem;
+}
+.review-box.pda h3 span {
+    font-size: 93%;
+    color: #088140;
+    display: block;
+    font-style: italic;
+}
+.editguide-icon {
+    color: #F6B111;
+}
+.five-stars {
+    color: #F6B111;
+    font-size: 2.1rem;
+    text-align: center;
+    margin: 0.8rem 0;
+}
+.help.is-info {
+    color: #D83737;
+}
+.gold-cta {
+    text-align: center;
+}
+.gold-cta.bottom {
+    text-align: center;
+    margin: 3rem 0 1rem;
+}
+.gold-cta a {
+    display: inline-block;
+    border-color: transparent;
+    color: #fff;
+    padding: 0.5rem 1.2rem;
+    text-decoration: none;
+    border-radius: 2px;
+    background: #D83737;
+}
+.gold-cta.bottom a {
+    font-size: 1.2rem;
+}
+.gold-cta a.is-info {
+    background-color: #2980B9;
+    margin-left: 0.5rem;
+}
+.review-content h4 {
+    font-size: 0.9rem;
+    font-weight: 400;
+    margin: 0 0 1rem;
+}
+.pda-review {
+    text-align: left;
+}

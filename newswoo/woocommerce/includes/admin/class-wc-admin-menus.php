@@ -1,0 +1,1 @@
+// Shipping menu removed in NewsWoo
